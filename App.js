@@ -1,4 +1,3 @@
-// App.js with Centered Date and Calendar Header Fixes
 import 'react-native-gesture-handler';
 import React from 'react';
 import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
@@ -16,6 +15,9 @@ import MyScreen from './src/screens/MyScreen';
 import MedicineRegisterScreen from './src/screens/MedicineRegisterScreen';
 import VisitDetailScreen from './src/screens/VisitDetailScreen';
 import SplashScreen from './src/screens/SplashScreen';
+import MedicineDetailScreen from './src/screens/MedicineDetailScreen';
+// 새로 추가된 로그인 페이지
+import LoginPage from './src/screens/loginPage';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -40,6 +42,7 @@ function MainTabs() {
         tabBarInactiveTintColor: '#999',
       }}
     >
+      {/* ... 기존 탭들 그대로 ... */}
       <Tab.Screen
         name="Home"
         component={HomeScreen}
@@ -102,25 +105,51 @@ export default function App() {
         initialRouteName="Splash"
         screenOptions={{ headerTitleAlign: 'center' }}
       >
+        {/* 1. Splash */}
         <Stack.Screen
           name="Splash"
           component={SplashScreen}
           options={{ headerShown: false }}
         />
+
+        {/* 2. LoginPage */}
+        <Stack.Screen
+          name="Login"
+          component={LoginPage}
+          options={{ headerShown: false }}
+        />
+
+        {/* 3. Main */}
         <Stack.Screen
           name="MainTabs"
           component={MainTabs}
           options={{ headerShown: false }}
         />
+
+        {/* 이하 기존 스택들 */}
         <Stack.Screen
           name="Calendar"
           component={CalendarScreen}
-          options={{ headerShown: true, headerTitle: '달력', headerBackTitle: '홈', headerTintColor: '#000' }}
+          options={{
+            headerShown: true,
+            headerTitle: '달력',
+            headerBackTitle: '홈',
+            headerTintColor: '#000'
+          }}
         />
         <Stack.Screen
           name="VisitDetail"
           component={VisitDetailScreen}
           options={{ headerShown: true, headerTintColor: '#fff' }}
+        />
+        <Stack.Screen
+          name="MedicineDetail"
+          component={MedicineDetailScreen}
+          options={{
+            headerTitle: '약 복용 상세',
+            headerBackTitle: '홈',
+            headerTintColor: '#000',
+          }}
         />
       </Stack.Navigator>
     </NavigationContainer>
@@ -142,7 +171,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   plusContainer: {
-    marginTop:27,
+    marginTop: 27,
     width: 40,
     height: 40,
     borderRadius: 24,

@@ -4,7 +4,8 @@ import { View, Image, StyleSheet } from 'react-native';
 export default function SplashScreen({ navigation }) {
   useEffect(() => {
     const timeout = setTimeout(() => {
-      navigation.replace('MainTabs'); // 홈으로 바로 이동
+      // 수정: 메인 탭이 아니라 로그인 화면으로 이동
+      navigation.replace('Login');
     }, 2000); // 2초 후 자동 이동
 
     return () => clearTimeout(timeout);
@@ -17,8 +18,6 @@ export default function SplashScreen({ navigation }) {
         style={styles.image}
         resizeMode="contain"
       />
-
-
     </View>
   );
 }

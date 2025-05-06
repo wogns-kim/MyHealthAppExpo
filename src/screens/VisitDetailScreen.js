@@ -15,13 +15,11 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 export default function VisitDetailScreen() {
   const navigation = useNavigation();
 
-  // 오늘 날짜 포맷 (예: 5월 5일, 오늘)
   const today = new Date();
   const month = today.getMonth() + 1;
   const date = today.getDate();
   const headerTitle = `${month}월 ${date}일, 오늘`;
 
-  // 헤더 커스터마이징
   useFocusEffect(
     useCallback(() => {
       navigation.setOptions({
@@ -33,15 +31,11 @@ export default function VisitDetailScreen() {
         headerTintColor: '#000',
         headerTitle: headerTitle,
         headerTitleAlign: 'center',
-
-        // 좌측 뒤로가기
         headerLeft: () => (
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerButton}>
             <Ionicons name="arrow-back" size={24} color="#000" />
           </TouchableOpacity>
         ),
-
-        // 우측 달력 / 설정 아이콘
         headerRight: () => (
           <View style={styles.headerRightContainer}>
             <TouchableOpacity
@@ -51,7 +45,7 @@ export default function VisitDetailScreen() {
               <Ionicons name="calendar-outline" size={24} color="#000" />
             </TouchableOpacity>
             <TouchableOpacity
-              onPress={() => {/* TODO: 설정 화면으로 */ }}
+              onPress={() => {}}
               style={styles.headerButton}
             >
               <Ionicons name="settings-outline" size={24} color="#000" />
@@ -62,7 +56,6 @@ export default function VisitDetailScreen() {
     }, [navigation, headerTitle])
   );
 
-  // 샘플 데이터 (하드코딩)
   const hospital = {
     name: '월내과의원',
     label: '내과',
@@ -89,17 +82,17 @@ export default function VisitDetailScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.body}>
-        {/* 오늘 방문한 병원 */}
+        {/* 병원 */}
         <Text style={styles.sectionTitle}>오늘 방문한 병원</Text>
         <View style={styles.card}>
           <View style={styles.cardHeader}>
-            <Text style={styles.placeName}>{hospital.name}</Text>
-            <View style={styles.headerRight}>
+            <View style={styles.nameWithLabel}>
+              <Text style={styles.placeName}>{hospital.name}</Text>
               <Text style={styles.placeLabel}>{hospital.label}</Text>
-              <TouchableOpacity onPress={() => {/* TODO: 편집 로직 */ }} style={styles.editButton}>
-                <Ionicons name="pencil-outline" size={20} color="#666" />
-              </TouchableOpacity>
             </View>
+            <TouchableOpacity onPress={() => {}} style={styles.editButton}>
+              <Ionicons name="pencil-outline" size={20} color="#666" />
+            </TouchableOpacity>
           </View>
           <View style={styles.infoRow}>
             <Ionicons name="person-outline" size={16} color="#666" style={styles.infoIcon} />
@@ -121,19 +114,18 @@ export default function VisitDetailScreen() {
           </View>
         </View>
 
-        {/* 오늘 방문한 약국 */}
+        {/* 약국 */}
         <Text style={styles.sectionTitle}>오늘 방문한 약국</Text>
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <View style={styles.nameWithLabel}>
-              <Text style={styles.placeName}>{hospital.name}</Text>
-              <Text style={styles.placeLabel}>{hospital.label}</Text>
+              <Text style={styles.placeName}>{pharmacy.name}</Text>
+              <Text style={styles.placeLabel}>{pharmacy.label}</Text>
             </View>
-            <TouchableOpacity onPress={() => {/* TODO */ }} style={styles.editButton}>
+            <TouchableOpacity onPress={() => {}} style={styles.editButton}>
               <Ionicons name="pencil-outline" size={20} color="#666" />
             </TouchableOpacity>
           </View>
-
           <View style={styles.infoRow}>
             <Ionicons name="medkit-outline" size={16} color="#666" style={styles.infoIcon} />
             <Text style={styles.infoText}>담당약사 {pharmacy.pharmacist}</Text>
@@ -161,7 +153,6 @@ export default function VisitDetailScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
   body: { padding: 16 },
-
   headerButton: { paddingHorizontal: 12 },
   headerRightContainer: { flexDirection: 'row' },
 
@@ -180,33 +171,26 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 16,
   },
-
-  // 수정된 cardHeader
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 8,
   },
-
-  // 새로 추가: 이름과 라벨을 묶기 위한 컨테이너
   nameWithLabel: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-
   placeName: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#2a2aff',
     marginRight: 6,
   },
-
   placeLabel: {
     fontSize: 14,
     color: '#666',
   },
-
   editButton: {
     padding: 4,
   },
@@ -220,4 +204,3 @@ const styles = StyleSheet.create({
   infoText: { fontSize: 14, color: '#333', marginLeft: 4 },
   linkText: { textDecorationLine: 'underline', color: '#1e88e5' },
 });
-

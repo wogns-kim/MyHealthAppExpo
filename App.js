@@ -1,6 +1,7 @@
-// App.js
+// App.js with Centered Date and Calendar Header Fixes
 import 'react-native-gesture-handler';
 import React from 'react';
+import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -13,41 +14,83 @@ import SolutionScreen from './src/screens/SolutionScreen';
 import HospitalScreen from './src/screens/HospitalScreen';
 import MyScreen from './src/screens/MyScreen';
 import MedicineRegisterScreen from './src/screens/MedicineRegisterScreen';
-// 새로 만든 상세 화면
 import VisitDetailScreen from './src/screens/VisitDetailScreen';
+import SplashScreen from './src/screens/SplashScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
+function CustomTabBarButton({ children, onPress }) {
+  return (
+    <TouchableOpacity style={styles.customButton} onPress={onPress}>
+      <View style={styles.plusContainer}>{children}</View>
+    </TouchableOpacity>
+  );
+}
+
 function MainTabs() {
   return (
     <Tab.Navigator
-      initialRouteName="Home"
-      screenOptions={({ route }) => ({
+      screenOptions={{
+        tabBarShowLabel: true,
         headerShown: false,
-        tabBarActiveTintColor: '#4475F2',
-        tabBarInactiveTintColor: '#8A8A8E',
-        tabBarStyle: { backgroundColor: '#fff', height: 62, paddingBottom: 6 },
-        tabBarIcon: ({ color, size }) => {
-          switch (route.name) {
-            case 'Home':
-              return <Ionicons name="home" size={size} color={color} />;
-            case 'Solution':
-              return <AntDesign name="like2" size={size} color={color} />;
-            case 'Hospital':
-              return <AntDesign name="filetext1" size={size} color={color} />;
-            case 'My':
-              return <Ionicons name="person-outline" size={size} color={color} />;
-            default:
-              return null;
-          }
-        },
-      })}
+        tabBarStyle: styles.tabBar,
+        tabBarLabelStyle: { fontSize: 11 },
+        tabBarActiveTintColor: '#3C4CF1',
+        tabBarInactiveTintColor: '#999',
+      }}
     >
-      <Tab.Screen name="Home" component={HomeScreen} options={{ tabBarLabel: '홈' }} />
-      <Tab.Screen name="Solution" component={SolutionScreen} options={{ tabBarLabel: '고민해결' }} />
-      <Tab.Screen name="Hospital" component={HospitalScreen} options={{ tabBarLabel: '내 병원' }} />
-      <Tab.Screen name="My" component={MyScreen} options={{ tabBarLabel: '마이' }} />
+      <Tab.Screen
+        name="Home"
+        component={HomeScreen}
+        options={{
+          tabBarLabel: '홈',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="home-outline" size={size} color={color} />
+          )
+        }}
+      />
+      <Tab.Screen
+        name="Solution"
+        component={SolutionScreen}
+        options={{
+          tabBarLabel: '고민해결',
+          tabBarIcon: ({ color, size }) => (
+            <AntDesign name="like2" size={size} color={color} />
+          )
+        }}
+      />
+      <Tab.Screen
+        name="MedicineRegister"
+        component={MedicineRegisterScreen}
+        options={{
+          tabBarLabel: '',
+          tabBarIcon: () => (
+            <AntDesign name="plus" size={22} color="white" style={{ marginTop: 8 }} />
+          ),
+          tabBarButton: (props) => <CustomTabBarButton {...props} />,
+        }}
+      />
+      <Tab.Screen
+        name="Hospital"
+        component={HospitalScreen}
+        options={{
+          tabBarLabel: '나의기록',
+          tabBarIcon: ({ color, size }) => (
+            <AntDesign name="filetext1" size={size} color={color} />
+          )
+        }}
+      />
+      <Tab.Screen
+        name="My"
+        component={MyScreen}
+        options={{
+          tabBarLabel: '마이',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="person-outline" size={size} color={color} />
+          )
+        }}
+      />
     </Tab.Navigator>
   );
 }
@@ -55,48 +98,61 @@ function MainTabs() {
 export default function App() {
   return (
     <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerTitleAlign: 'center' }}>
-        {/* 1. MainTabs */}
+      <Stack.Navigator
+        initialRouteName="Splash"
+        screenOptions={{ headerTitleAlign: 'center' }}
+      >
+        <Stack.Screen
+          name="Splash"
+          component={SplashScreen}
+          options={{ headerShown: false }}
+        />
         <Stack.Screen
           name="MainTabs"
           component={MainTabs}
           options={{ headerShown: false }}
         />
-
-        {/* 2. 처방전 등록 */}
-        <Stack.Screen
-          name="MedicineRegister"
-          component={MedicineRegisterScreen}
-          options={{
-            headerShown: true,
-            headerTitle: '처방전 등록',
-            headerBackTitle: '홈',
-            headerTintColor: '#000',
-          }}
-        />
-
-        {/* 3. 달력 */}
         <Stack.Screen
           name="Calendar"
           component={CalendarScreen}
-          options={{
-            headerShown: true,
-            headerTitle: '달력',
-            headerBackTitle: '홈',
-            headerTintColor: '#000',
-          }}
+          options={{ headerShown: true, headerTitle: '달력', headerBackTitle: '홈', headerTintColor: '#000' }}
         />
-
-        {/* 4. 오늘 방문 상세 */}
         <Stack.Screen
           name="VisitDetail"
           component={VisitDetailScreen}
-          options={{
-            headerShown: true,
-            headerTintColor: '#fff',
-          }}
+          options={{ headerShown: true, headerTintColor: '#fff' }}
         />
       </Stack.Navigator>
     </NavigationContainer>
   );
 }
+
+const styles = StyleSheet.create({
+  tabBar: {
+    position: 'absolute',
+    height: 70,
+    borderTopWidth: 0.5,
+    borderColor: '#eee',
+    backgroundColor: 'white',
+    elevation: 10,
+  },
+  customButton: {
+    top: -14,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  plusContainer: {
+    marginTop:27,
+    width: 40,
+    height: 40,
+    borderRadius: 24,
+    backgroundColor: '#3C4CF1',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 6,
+  },
+});

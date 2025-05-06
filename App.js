@@ -16,8 +16,9 @@ import MedicineRegisterScreen from './src/screens/MedicineRegisterScreen';
 import VisitDetailScreen from './src/screens/VisitDetailScreen';
 import SplashScreen from './src/screens/SplashScreen';
 import MedicineDetailScreen from './src/screens/MedicineDetailScreen';
+import SettingsScreen from './src/screens/SettingScreen';
 // 새로 추가된 로그인 페이지
-import LoginPage from './src/screens/loginPage';
+// import LoginPage from './src/screens/loginPage';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -113,11 +114,11 @@ export default function App() {
         />
 
         {/* 2. LoginPage */}
-        <Stack.Screen
+        {/* <Stack.Screen
           name="Login"
           component={LoginPage}
           options={{ headerShown: false }}
-        />
+        /> */}
 
         {/* 3. Main */}
         <Stack.Screen
@@ -146,11 +147,28 @@ export default function App() {
           name="MedicineDetail"
           component={MedicineDetailScreen}
           options={{
-            headerTitle: '약 복용 상세',
-            headerBackTitle: '홈',
-            headerTintColor: '#000',
+            headerShown: false,   // ← 기본 네이티브 헤더 숨김
           }}
         />
+        <Stack.Screen
+          name="Settings"
+          component={SettingsScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="MyRecords"
+          component={HospitalScreen}
+          options={{ headerShown: false }}
+        />
+
+
+
+
+
+
+
+
+
       </Stack.Navigator>
     </NavigationContainer>
   );

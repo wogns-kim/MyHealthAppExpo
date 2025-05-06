@@ -1,32 +1,89 @@
+// src/screens/MyPageScreen.js
 import React, { useState } from 'react';
 import {
+  SafeAreaView,
   View,
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
   ScrollView,
-  SafeAreaView,
+  StyleSheet,
+  Alert,
 } from 'react-native';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { registerUser, createProfile } from './constants';
 
 export default function MyPageScreen() {
   const navigation = useNavigation();
+
+  // 입력 state
+  const [name, setName] = useState('');
   const [gender, setGender] = useState(null);
+  const [birthDate, setBirthDate] = useState('');
+  const [tempChronic, setTempChronic] = useState('');
+  const [chronicList, setChronicList] = useState([]);
+  const [tempAllergy, setTempAllergy] = useState('');
+  const [allergyList, setAllergyList] = useState([]);
+
+  const addChronic = () => {
+    const t = tempChronic.trim();
+    if (t) {
+      setChronicList(prev => [...prev, t]);
+      setTempChronic('');
+    }
+  };
+  const addAllergy = () => {
+    const t = tempAllergy.trim();
+    if (t) {
+      setAllergyList(prev => [...prev, t]);
+      setTempAllergy('');
+    }
+  };
+
+  // 회원가입 + 프로필 생성
+  const onRegisterAndCreateProfile = async () => {
+    try {
+      const token = await registerUser({ username: 'jeowig', password: 'password123' });
+      await createProfile({
+        name,
+        birth_date: birthDate,
+        gender: gender === '남성' ? 'M' : gender === '여성' ? 'F' : 'O',
+        chronic_diseases: chronicList,
+        allergies: allergyList,
+      });
+      Alert.alert('🎉 완료', '회원가입과 프로필 생성이 모두 완료되었습니다.');
+      // Tab 네비게이터 안의 Home으로 이동
+      navigation.navigate('MainTabs', { screen: 'Home' });
+    } catch (e) {
+      console.warn(e);
+      Alert.alert('🚨 오류', e.message);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* ── HEADER ───────────────────────── */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
+        {/* 좌측 뒤로가기 → MainTabs의 Home 탭으로 이동 */}
+        <TouchableOpacity
+          style={styles.headerLeft}
+          onPress={() => navigation.navigate('MainTabs', { screen: 'Home' })}
+        >
           <Ionicons name="chevron-back" size={24} color="black" />
         </TouchableOpacity>
 
-        <Text style={styles.headerTitle}>마이페이지</Text>
+        {/* 가운데 타이틀 */}
+        <Text style={styles.headerTitle} pointerEvents="none">마이페이지</Text>
 
-        <View style={styles.headerIcons}>
-          <TouchableOpacity onPress={() => navigation.navigate('Calendar')}>
-            <Feather name="calendar" size={20} color="black" style={styles.iconSpacing} />
+        {/* 우측 아이콘 */}
+        <View style={styles.headerRight}>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('Calendar')}
+            style={{ marginRight: 16 }}
+          >
+            <Feather name="calendar" size={20} color="black" />
           </TouchableOpacity>
           <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
             <Ionicons name="settings-outline" size={20} color="black" />
@@ -38,14 +95,19 @@ export default function MyPageScreen() {
         {/* 이름 */}
         <View style={[styles.row, styles.rowHorizontal]}>
           <Text style={styles.label}>이름</Text>
-          <TextInput style={styles.inputHalf} placeholder="이름을 입력해주세요." />
+          <TextInput
+            value={name}
+            onChangeText={setName}
+            style={styles.inputHalf}
+            placeholder="이름을 입력해주세요."
+          />
         </View>
 
         {/* 성별 */}
         <View style={[styles.row, styles.rowHorizontal]}>
           <Text style={styles.label}>성별</Text>
           <View style={styles.genderContainer}>
-            {['남성', '여성', '기타'].map((g) => (
+            {['남성', '여성', '기타'].map(g => (
               <TouchableOpacity
                 key={g}
                 onPress={() => setGender(g)}
@@ -63,52 +125,69 @@ export default function MyPageScreen() {
         {/* 생년월일 */}
         <View style={[styles.row, styles.rowHorizontal]}>
           <Text style={styles.label}>생년월일</Text>
-          <TextInput style={styles.inputHalf} placeholder="생년월일을 입력해주세요." />
+          <TextInput
+            value={birthDate}
+            onChangeText={setBirthDate}
+            style={styles.inputHalf}
+            placeholder="YYYY-MM-DD"
+          />
         </View>
 
         {/* 만성질환 */}
         <View style={styles.row}>
           <View style={[styles.rowHorizontal, { alignItems: 'center' }]}>
             <Text style={styles.label}>만성질환</Text>
-
-            {/* ▼ 이 부분만 추가 */}
             <View style={styles.searchContainer}>
               <View style={styles.searchBox}>
                 <TextInput
+                  value={tempChronic}
+                  onChangeText={setTempChronic}
                   style={styles.searchInput}
-                  placeholder="다음과 같은 질병으로 진단을 받았어요."
+                  placeholder="병명 입력"
                 />
                 <Feather name="search" size={16} color="#999" />
               </View>
-              <TouchableOpacity style={styles.plusWrapper}>
+              <TouchableOpacity style={styles.plusWrapper} onPress={addChronic}>
                 <Text style={styles.plus}>＋</Text>
               </TouchableOpacity>
             </View>
-            {/* ▲ 여긴 수정 금지 */}
           </View>
+          {chronicList.map((it, i) => (
+            <Text key={i} style={styles.listItem}>• {it}</Text>
+          ))}
         </View>
-
 
         {/* 알레르기 */}
         <View style={styles.row}>
           <View style={[styles.rowHorizontal, { alignItems: 'center' }]}>
             <Text style={styles.label}>알레르기</Text>
-
             <View style={styles.searchContainer}>
               <View style={styles.searchBox}>
                 <TextInput
+                  value={tempAllergy}
+                  onChangeText={setTempAllergy}
                   style={styles.searchInput}
-                  placeholder="나의 약물 알레르기 증상이에요."
+                  placeholder="알레르기 입력"
                 />
                 <Feather name="search" size={16} color="#999" />
               </View>
-              <TouchableOpacity style={styles.plusWrapper}>
+              <TouchableOpacity style={styles.plusWrapper} onPress={addAllergy}>
                 <Text style={styles.plus}>＋</Text>
               </TouchableOpacity>
             </View>
           </View>
+          {allergyList.map((it, i) => (
+            <Text key={i} style={styles.listItem}>• {it}</Text>
+          ))}
         </View>
 
+        {/* 완료 버튼 */}
+        <TouchableOpacity
+          style={styles.saveButton}
+          onPress={onRegisterAndCreateProfile}
+        >
+          <Text style={styles.saveButtonText}>완료</Text>
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
@@ -116,26 +195,42 @@ export default function MyPageScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
+
+  // ── HEADER 스타일 ───────────────────────
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    justifyContent: 'space-between',
+    height: 56,
+    position: 'relative',
+    justifyContent: 'center',
+    backgroundColor: '#fff',
     borderBottomWidth: 0.5,
     borderColor: '#ddd',
   },
+  headerLeft: {
+    position: 'absolute',
+    left: 16,
+    top: '50%',
+    transform: [{ translateY: -12 }],
+  },
   headerTitle: {
+    position: 'absolute',
+    left: 0, right: 0,   // 화면 끝까지 늘려서
+    textAlign: 'center',
     fontSize: 18,
     fontWeight: 'bold',
-    position: 'absolute',
-    left: '50%',
-    transform: [{ translateX: -35 }],
+    color: '#000',
   },
-  headerIcons: { flexDirection: 'row' },
-  iconSpacing: { marginRight: 16 },
+  headerRight: {
+    position: 'absolute',
+    right: 16,
+    top: '50%',
+    transform: [{ translateY: -12 }],
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  /* … 이하 기존 스타일 유지 … */
   form: { paddingHorizontal: 20, paddingTop: 10, marginTop: 30 },
-  row: { marginBottom: 48 },
+  row: { marginBottom: 24 },
   rowHorizontal: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -170,6 +265,7 @@ const styles = StyleSheet.create({
     borderColor: '#000',
     backgroundColor: '#eee',
   },
+  searchContainer: { flex: 1, position: 'relative' },
   searchBox: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -180,27 +276,26 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     flex: 1,
   },
-  searchInput: {
-    flex: 1,
-    fontSize: 14,
-  },
-
-  // ▼ 만성질환 + 버튼 중앙정렬용 wrapper
-  searchContainer: {
-    flex: 1,
-    position: 'relative',
-  },
-  // ▼ plus 버튼만 수정
+  searchInput: { flex: 1, fontSize: 14 },
   plusWrapper: {
     position: 'absolute',
     top: '100%',
     left: '50%',
-    transform: [{ translateX: -12 }], // 버튼 너비 절반만큼 왼쪽으로
+    transform: [{ translateX: -12 }],
     marginTop: 8,
   },
-
-  plus: {
-    fontSize: 28,
-    color: '#3F51B5',
+  plus: { fontSize: 28, color: '#3F51B5' },
+  listItem: {
+    marginLeft: 106,
+    marginTop: 4,
+    color: '#555',
   },
+  saveButton: {
+    backgroundColor: '#3C4CF1',
+    padding: 14,
+    borderRadius: 8,
+    marginTop: 30,
+    alignItems: 'center',
+  },
+  saveButtonText: { color: '#fff', fontSize: 16 },
 });

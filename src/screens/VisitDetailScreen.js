@@ -48,7 +48,9 @@ export default function VisitDetailScreen() {
               onPress={() => {}}
               style={styles.headerButton}
             >
+              <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
               <Ionicons name="settings-outline" size={24} color="#000" />
+              </TouchableOpacity>
             </TouchableOpacity>
           </View>
         ),

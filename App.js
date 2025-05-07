@@ -1,6 +1,7 @@
+// App.js (프로젝트 루트)
 import 'react-native-gesture-handler';
 import React from 'react';
-import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
+import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -17,8 +18,7 @@ import VisitDetailScreen from './src/screens/VisitDetailScreen';
 import SplashScreen from './src/screens/SplashScreen';
 import MedicineDetailScreen from './src/screens/MedicineDetailScreen';
 import SettingsScreen from './src/screens/SettingScreen';
-// 새로 추가된 로그인 페이지
-// import LoginPage from './src/screens/loginPage';
+import LoginPage from './src/screens/loginPage'; 
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -43,7 +43,6 @@ function MainTabs() {
         tabBarInactiveTintColor: '#999',
       }}
     >
-      {/* ... 기존 탭들 그대로 ... */}
       <Tab.Screen
         name="Home"
         component={HomeScreen}
@@ -51,7 +50,7 @@ function MainTabs() {
           tabBarLabel: '홈',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="home-outline" size={size} color={color} />
-          )
+          ),
         }}
       />
       <Tab.Screen
@@ -61,7 +60,7 @@ function MainTabs() {
           tabBarLabel: '고민해결',
           tabBarIcon: ({ color, size }) => (
             <AntDesign name="like2" size={size} color={color} />
-          )
+          ),
         }}
       />
       <Tab.Screen
@@ -82,7 +81,7 @@ function MainTabs() {
           tabBarLabel: '나의기록',
           tabBarIcon: ({ color, size }) => (
             <AntDesign name="filetext1" size={size} color={color} />
-          )
+          ),
         }}
       />
       <Tab.Screen
@@ -92,7 +91,7 @@ function MainTabs() {
           tabBarLabel: '마이',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="person-outline" size={size} color={color} />
-          )
+          ),
         }}
       />
     </Tab.Navigator>
@@ -113,30 +112,25 @@ export default function App() {
           options={{ headerShown: false }}
         />
 
-        {/* 2. LoginPage */}
-        {/* <Stack.Screen
+        {/* 2. Login 페이지 (로그인 흐름) */}
+        <Stack.Screen
           name="Login"
           component={LoginPage}
           options={{ headerShown: false }}
-        /> */}
+        />
 
-        {/* 3. Main */}
+        {/* 3. 메인 탭 */}
         <Stack.Screen
           name="MainTabs"
           component={MainTabs}
           options={{ headerShown: false }}
         />
 
-        {/* 이하 기존 스택들 */}
+        {/* 4. 기타 스크린 */}
         <Stack.Screen
           name="Calendar"
           component={CalendarScreen}
-          options={{
-            headerShown: true,
-            headerTitle: '달력',
-            headerBackTitle: '홈',
-            headerTintColor: '#000'
-          }}
+          options={{ headerShown: true, headerTitle: '달력', headerBackTitle: '홈', headerTintColor: '#000' }}
         />
         <Stack.Screen
           name="VisitDetail"
@@ -146,9 +140,7 @@ export default function App() {
         <Stack.Screen
           name="MedicineDetail"
           component={MedicineDetailScreen}
-          options={{
-            headerShown: false,   // ← 기본 네이티브 헤더 숨김
-          }}
+          options={{ headerShown: false }}
         />
         <Stack.Screen
           name="Settings"
@@ -160,15 +152,6 @@ export default function App() {
           component={HospitalScreen}
           options={{ headerShown: false }}
         />
-
-
-
-
-
-
-
-
-
       </Stack.Navigator>
     </NavigationContainer>
   );

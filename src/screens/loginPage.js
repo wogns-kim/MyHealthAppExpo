@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { registerUser, createProfile } from './constants';  // ← 변경된 import
+import { registerUser, createProfile } from './constants';  
 
 export default function MyPageScreen() {
     const navigation = useNavigation();
@@ -47,7 +47,7 @@ export default function MyPageScreen() {
         try {
             // 1️⃣ 회원가입 → 토큰 저장(AsyncStorage에 자동 저장됨)
             const token = await registerUser({
-                username: 'jeowig',
+                username: 'kim',
                 password: 'password123',
             });
 

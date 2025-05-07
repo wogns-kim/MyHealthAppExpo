@@ -1,118 +1,150 @@
-import React from 'react';
+// src/screens/MedicineRegisterScreen.js
+import React, { useEffect } from 'react';
 import {
   SafeAreaView,
   View,
   Text,
-  StyleSheet,
+  ScrollView,
+  Image,
   TouchableOpacity,
+  StyleSheet,
+  Alert
 } from 'react-native';
-import { Ionicons, AntDesign } from '@expo/vector-icons';
+import { Ionicons, Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import * as ImagePicker from 'expo-image-picker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function MedicineRegisterScreen() {
   const navigation = useNavigation();
 
+  // 카메라 권한 요청
+  useEffect(() => {
+    (async () => {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('권한 필요', '카메라 권한이 필요합니다.');
+      }
+    })();
+  }, []);
+
+  const handleCapture = async (type) => {
+    // 카메라 실행(Base64 포함)
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: false,
+      quality: 0.8,
+      base64: true,
+    });
+
+    if (result.cancelled) return;
+    const { base64, uri } = result;
+
+    // 1) 로그인 시 저장한 authToken 가져오기
+    let token;
+    try {
+      token = await AsyncStorage.getItem('authToken');
+    } catch (e) {
+      console.error('AsyncStorage getItem error:', e);
+    }
+
+    if (!token) {
+      Alert.alert('인증 오류', '로그인 후 이용해 주세요.');
+      navigation.replace('Login');
+      return;
+    }
+
+    // 2) 서버로 사진 전송
+    try {
+      const response = await fetch(
+        'https://c68f-211-198-0-129.ngrok-free.app/api/prescriptions/',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Token ${token}`,
+          },
+          body: JSON.stringify({ image: base64 }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('사진 전송 성공:', data);
+
+      // 3) 서버 응답 후 미리보기 화면 이동
+      navigation.navigate('ImagePreview', {
+        imageUri: uri,
+        captureType: type,
+        serverResponse: data,
+      });
+    } catch (error) {
+      console.error('사진 전송 실패:', error);
+      Alert.alert('전송 오류', '서버 전송 중 오류가 발생했습니다.');
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
-      {/* Content */}
-      <View style={styles.content}>
-        <Text style={styles.contentTitle}>처방전을 등록해 주세요</Text>
-        <Text style={styles.contentSubtitle}>나에게 맞는 방법을 선택해보세요</Text>
-
-        {/* Registration Options */}
-        <View style={styles.optionsContainer}>
-          {/* Auto Registration */}
-          <TouchableOpacity
-            style={styles.optionCard}
-            onPress={() => navigation.navigate('MedicineRegisterAuto')}
-          >
-            <View style={styles.optionIconContainer}>
-              <Ionicons name="camera-outline" size={30} color="#4475F2" />
-            </View>
-            <View style={styles.optionTextContainer}>
-              <Text style={styles.optionTitle}>자동 등록</Text>
-              <Text style={styles.optionDescription}>
-                처방전 또는 약 봉투를 사진으로 찍으면{`\n`}자동으로 정보를 인식해요
-              </Text>
-            </View>
-            <AntDesign name="right" size={20} color="#AEAEB2" />
+      {/* HEADER */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerLeft}>
+          <Ionicons name="chevron-back" size={24} color="#000" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>처방전/약봉투 사진 촬영</Text>
+        <View style={styles.headerRight}>
+          <TouchableOpacity onPress={() => {}} style={{ marginRight: 16 }}>
+            <Feather name="calendar" size={24} color="#000" />
           </TouchableOpacity>
-
-          {/* Manual Registration */}
-          <TouchableOpacity
-            style={styles.optionCard}
-            onPress={() => navigation.navigate('MedicineRegisterManual')}
-          >
-            <View style={styles.optionIconContainer}>
-              <Ionicons name="create-outline" size={30} color="#4475F2" />
-            </View>
-            <View style={styles.optionTextContainer}>
-              <Text style={styles.optionTitle}>수동 등록</Text>
-              <Text style={styles.optionDescription}>
-                처방받은 약 정보를 직접 입력하세요
-              </Text>
-            </View>
-            <AntDesign name="right" size={20} color="#AEAEB2" />
+          <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
+            <Feather name="settings" size={24} color="#000" />
           </TouchableOpacity>
-        </View>
-
-        {/* Sample Image */}
-        <View style={styles.sampleContainer}>
-          <Text style={styles.sampleTitle}>처방전 예시</Text>
-          <View style={styles.sampleImageContainer}>
-            <View style={styles.sampleImage}>
-              <View style={styles.imagePlaceholder}>
-                <Text style={styles.placeholderText}>처방전 이미지</Text>
-              </View>
-            </View>
-          </View>
         </View>
       </View>
+
+      {/* BODY */}
+      <ScrollView contentContainerStyle={styles.content}>
+        <Text style={styles.subtitle}>
+          한 번의 사진 촬영으로{'\n'}          
+          자동 약 복용 알람, 약 기록 및 관리까지!
+        </Text>
+
+        {/* 처방전 카드 */}
+        <TouchableOpacity
+          style={styles.card}
+          activeOpacity={0.7}
+          onPress={() => handleCapture('prescription')}
+        >
+          <View style={styles.cardTextWrapper}>
+            <Text style={styles.cardTitleBig}>처방전</Text>
+          </View>
+          <Image
+            source={require('../../assets/description2.png')}
+            style={styles.cardImage}
+            resizeMode="contain"
+          />
+          <Ionicons name="chevron-forward" size={20} color="#666" />
+        </TouchableOpacity>
+
+        {/* 약봉투 카드 */}
+        <TouchableOpacity
+          style={[styles.card, { marginTop: 16 }]}
+          activeOpacity={0.7}
+          onPress={() => handleCapture('pillbag')}
+        >
+          <View style={styles.cardTextWrapper}>
+            <Text style={styles.cardTitleBig}>약봉투</Text>
+          </View>
+          <Image
+            source={require('../../assets/description1.png')}
+            style={styles.cardImage}
+            resizeMode="contain"
+          />
+          <Ionicons name="chevron-forward" size={20} color="#666" />
+        </TouchableOpacity>
+      </ScrollView>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
-  content: { flex: 1, padding: 20 },
-  contentTitle: { fontSize: 22, fontWeight: 'bold', marginBottom: 8 },
-  contentSubtitle: { fontSize: 16, color: '#8a8a8a', marginBottom: 32 },
-  optionsContainer: { marginBottom: 32 },
-  optionCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    backgroundColor: '#FFF',
-    borderRadius: 12,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3.84,
-    elevation: 2,
-  },
-  optionIconContainer: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#F0F5FF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
-  },
-  optionTextContainer: { flex: 1 },
-  optionTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 4 },
-  optionDescription: { fontSize: 14, color: '#8a8a8a', lineHeight: 20 },
-  sampleContainer: { marginTop: 16 },
-  sampleTitle: { fontSize: 16, fontWeight: 'bold', marginBottom: 16 },
-  sampleImageContainer: { alignItems: 'center' },
-  sampleImage: { width: '100%', height: 150, borderRadius: 12, overflow: 'hidden' },
-  imagePlaceholder: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: '#F2F2F7',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  placeholderText: { color: '#8a8a8a', fontSize: 16 },
-});

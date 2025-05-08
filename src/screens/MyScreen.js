@@ -6,22 +6,25 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  ScrollView,
   StyleSheet,
+  ScrollView,
   Alert,
+  Modal,
+  Platform,
 } from 'react-native';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { registerUser, createProfile } from './constants';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { createProfile } from './constants'; // 프로필 업데이트 API
 
 export default function MyPageScreen() {
   const navigation = useNavigation();
 
-  // 입력 state
   const [name, setName] = useState('');
   const [gender, setGender] = useState(null);
   const [birthDate, setBirthDate] = useState('');
+  const [birthDateRaw, setBirthDateRaw] = useState(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [tempChronic, setTempChronic] = useState('');
   const [chronicList, setChronicList] = useState([]);
   const [tempAllergy, setTempAllergy] = useState('');
@@ -34,6 +37,11 @@ export default function MyPageScreen() {
       setTempChronic('');
     }
   };
+
+  const removeChronic = index => {
+    setChronicList(prev => prev.filter((_, i) => i !== index));
+  };
+
   const addAllergy = () => {
     const t = tempAllergy.trim();
     if (t) {
@@ -42,10 +50,12 @@ export default function MyPageScreen() {
     }
   };
 
-  // 회원가입 + 프로필 생성
-  const onRegisterAndCreateProfile = async () => {
+  const removeAllergy = index => {
+    setAllergyList(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const onSaveProfile = async () => {
     try {
-      const token = await registerUser({ username: 'jeowig', password: 'password123' });
       await createProfile({
         name,
         birth_date: birthDate,
@@ -53,35 +63,28 @@ export default function MyPageScreen() {
         chronic_diseases: chronicList,
         allergies: allergyList,
       });
-      Alert.alert('🎉 완료', '회원가입과 프로필 생성이 모두 완료되었습니다.');
-      // Tab 네비게이터 안의 Home으로 이동
-      navigation.navigate('MainTabs', { screen: 'Home' });
+      Alert.alert('✅ 저장 완료', '프로필이 업데이트되었습니다.');
+      navigation.goBack();
     } catch (e) {
       console.warn(e);
-      Alert.alert('🚨 오류', e.message);
+      Alert.alert('❌ 오류', e.message);
     }
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* ── HEADER ───────────────────────── */}
+      {/* HEADER */}
       <View style={styles.header}>
-        {/* 좌측 뒤로가기 → MainTabs의 Home 탭으로 이동 */}
-        <TouchableOpacity
-          style={styles.headerLeft}
-          onPress={() => navigation.navigate('MainTabs', { screen: 'Home' })}
-        >
+        <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="chevron-back" size={24} color="black" />
         </TouchableOpacity>
-
-        {/* 가운데 타이틀 */}
-        <Text style={styles.headerTitle} pointerEvents="none">마이페이지</Text>
-
-        {/* 우측 아이콘 */}
+        <View style={styles.headerCenter}>
+          <Text style={styles.headerTitle}>마이페이지</Text>
+        </View>
         <View style={styles.headerRight}>
           <TouchableOpacity
             onPress={() => navigation.navigate('Calendar')}
-            style={{ marginRight: 16 }}
+            style={styles.iconSpacing}
           >
             <Feather name="calendar" size={20} color="black" />
           </TouchableOpacity>
@@ -91,7 +94,41 @@ export default function MyPageScreen() {
         </View>
       </View>
 
-      <ScrollView style={styles.form}>
+      {/* DATE PICKER MODAL */}
+      <Modal
+        visible={showDatePicker}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowDatePicker(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <DateTimePicker
+              value={birthDateRaw}
+              mode="date"
+              display="spinner"
+              locale="ko-KR"
+              maximumDate={new Date()}
+              onChange={(event, selected) => {
+                // Android: event.type==='set' means user confirmed a date
+                if (event.type === 'set' && selected) {
+                  setBirthDateRaw(selected);
+                  setBirthDate(selected.toISOString().split('T')[0]);
+                }
+              }}
+            />
+            <TouchableOpacity
+              style={styles.modalButton}
+              onPress={() => setShowDatePicker(false)}
+            >
+              <Text style={styles.modalButtonText}>확인</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* FORM */}
+      <ScrollView contentContainerStyle={styles.form}>
         {/* 이름 */}
         <View style={[styles.row, styles.rowHorizontal]}>
           <Text style={styles.label}>이름</Text>
@@ -111,10 +148,7 @@ export default function MyPageScreen() {
               <TouchableOpacity
                 key={g}
                 onPress={() => setGender(g)}
-                style={[
-                  styles.genderButton,
-                  gender === g && styles.genderSelected,
-                ]}
+                style={[styles.genderButton, gender === g && styles.genderSelected]}
               >
                 <Text style={{ color: gender === g ? '#000' : '#999' }}>{g}</Text>
               </TouchableOpacity>
@@ -125,12 +159,14 @@ export default function MyPageScreen() {
         {/* 생년월일 */}
         <View style={[styles.row, styles.rowHorizontal]}>
           <Text style={styles.label}>생년월일</Text>
-          <TextInput
-            value={birthDate}
-            onChangeText={setBirthDate}
-            style={styles.inputHalf}
-            placeholder="YYYY-MM-DD"
-          />
+          <TouchableOpacity
+            style={[styles.inputHalf, { justifyContent: 'center' }]}
+            onPress={() => setShowDatePicker(true)}
+          >
+            <Text style={{ color: birthDate ? '#000' : '#aaa' }}>
+              {birthDate || 'YYYY-MM-DD'}
+            </Text>
+          </TouchableOpacity>
         </View>
 
         {/* 만성질환 */}
@@ -138,22 +174,26 @@ export default function MyPageScreen() {
           <View style={[styles.rowHorizontal, { alignItems: 'center' }]}>
             <Text style={styles.label}>만성질환</Text>
             <View style={styles.searchContainer}>
-              <View style={styles.searchBox}>
-                <TextInput
-                  value={tempChronic}
-                  onChangeText={setTempChronic}
-                  style={styles.searchInput}
-                  placeholder="병명 입력"
-                />
-                <Feather name="search" size={16} color="#999" />
-              </View>
+              <TextInput
+                value={tempChronic}
+                onChangeText={setTempChronic}
+                onSubmitEditing={addChronic}
+                returnKeyType="done"
+                style={styles.searchInput}
+                placeholder="병명 입력"
+              />
               <TouchableOpacity style={styles.plusWrapper} onPress={addChronic}>
                 <Text style={styles.plus}>＋</Text>
               </TouchableOpacity>
             </View>
           </View>
           {chronicList.map((it, i) => (
-            <Text key={i} style={styles.listItem}>• {it}</Text>
+            <View key={i} style={styles.listItemRow}>
+              <Text style={styles.listItem}>• {it}</Text>
+              <TouchableOpacity onPress={() => removeChronic(i)}>
+                <Ionicons name="close-circle" size={20} color="#f44336" />
+              </TouchableOpacity>
+            </View>
           ))}
         </View>
 
@@ -162,31 +202,32 @@ export default function MyPageScreen() {
           <View style={[styles.rowHorizontal, { alignItems: 'center' }]}>
             <Text style={styles.label}>알레르기</Text>
             <View style={styles.searchContainer}>
-              <View style={styles.searchBox}>
-                <TextInput
-                  value={tempAllergy}
-                  onChangeText={setTempAllergy}
-                  style={styles.searchInput}
-                  placeholder="알레르기 입력"
-                />
-                <Feather name="search" size={16} color="#999" />
-              </View>
+              <TextInput
+                value={tempAllergy}
+                onChangeText={setTempAllergy}
+                onSubmitEditing={addAllergy}
+                returnKeyType="done"
+                style={styles.searchInput}
+                placeholder="알레르기 입력"
+              />
               <TouchableOpacity style={styles.plusWrapper} onPress={addAllergy}>
                 <Text style={styles.plus}>＋</Text>
               </TouchableOpacity>
             </View>
           </View>
           {allergyList.map((it, i) => (
-            <Text key={i} style={styles.listItem}>• {it}</Text>
+            <View key={i} style={styles.listItemRow}>
+              <Text style={styles.listItem}>• {it}</Text>
+              <TouchableOpacity onPress={() => removeAllergy(i)}>
+                <Ionicons name="close-circle" size={20} color="#f44336" />
+              </TouchableOpacity>
+            </View>
           ))}
         </View>
 
-        {/* 완료 버튼 */}
-        <TouchableOpacity
-          style={styles.saveButton}
-          onPress={onRegisterAndCreateProfile}
-        >
-          <Text style={styles.saveButtonText}>완료</Text>
+        {/* 저장 버튼 */}
+        <TouchableOpacity style={styles.saveButton} onPress={onSaveProfile}>
+          <Text style={styles.saveButtonText}>저장</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -195,64 +236,62 @@ export default function MyPageScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
-
-  // ── HEADER 스타일 ───────────────────────
   header: {
-    height: 56,
-    position: 'relative',
-    justifyContent: 'center',
-    backgroundColor: '#fff',
-    borderBottomWidth: 0.5,
-    borderColor: '#ddd',
-  },
-  headerLeft: {
-    position: 'absolute',
-    left: 16,
-    top: '50%',
-    transform: [{ translateY: -12 }],
-  },
-  headerTitle: {
-    position: 'absolute',
-    left: 0, right: 0,   // 화면 끝까지 늘려서
-    textAlign: 'center',
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#000',
-  },
-  headerRight: {
-    position: 'absolute',
-    right: 16,
-    top: '50%',
-    transform: [{ translateY: -12 }],
     flexDirection: 'row',
     alignItems: 'center',
-  },
-
-  /* … 이하 기존 스타일 유지 … */
-  form: { paddingHorizontal: 20, paddingTop: 10, marginTop: 30 },
-  row: { marginBottom: 24 },
-  rowHorizontal: {
-    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: 0.5,
+    borderColor: '#ddd',
     justifyContent: 'space-between',
+    position: 'relative',
   },
-  label: {
-    fontSize: 15,
-    fontWeight: 'bold',
-    width: 90,
-    marginRight: 16,
+  headerCenter: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    alignItems: 'center',
   },
+  headerTitle: { fontSize: 18, fontWeight: 'bold' },
+  headerRight: { flexDirection: 'row', alignItems: 'center' },
+  iconSpacing: { marginRight: 16 },
+
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContainer: {
+    width: '80%',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 20,
+    alignItems: 'center',
+  },
+  modalButton: {
+    marginTop: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    backgroundColor: '#3C4CF1',
+  },
+  modalButtonText: { color: '#fff', fontSize: 16 },
+
+  form: { paddingHorizontal: 20, paddingTop: 40, paddingBottom: 40 },
+  row: { marginBottom: 50 },
+  rowHorizontal: { flexDirection: 'row', justifyContent: 'space-between' },
+  label: { fontSize: 15, fontWeight: 'bold', width: 90, marginRight: 16 },
   inputHalf: {
     flex: 1,
     borderWidth: 1,
     borderColor: '#ddd',
     borderRadius: 10,
     padding: 12,
+    marginTop: -10,
   },
-  genderContainer: {
-    flexDirection: 'row',
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
+
+  genderContainer: { flexDirection: 'row', flex: 1, justifyContent: 'flex-end' },
   genderButton: {
     borderWidth: 1,
     borderColor: '#ddd',
@@ -261,35 +300,38 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginLeft: 8,
   },
-  genderSelected: {
-    borderColor: '#000',
-    backgroundColor: '#eee',
-  },
-  searchContainer: { flex: 1, position: 'relative' },
-  searchBox: {
+  genderSelected: { borderColor: '#000', backgroundColor: '#eee' },
+
+  searchContainer: {
+    flex: 1,
+    position: 'relative',
     flexDirection: 'row',
-    alignItems: 'center',
+  },
+  searchInput: {
+    flex: 1,
     borderWidth: 1,
     borderColor: '#ddd',
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    flex: 1,
+    fontSize: 14,
   },
-  searchInput: { flex: 1, fontSize: 14 },
   plusWrapper: {
     position: 'absolute',
-    top: '100%',
-    left: '50%',
-    transform: [{ translateX: -12 }],
-    marginTop: 8,
+    top: '50%',
+    right: 12,
+    transform: [{ translateY: -12 }],
   },
   plus: { fontSize: 28, color: '#3F51B5' },
-  listItem: {
+
+  listItemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
     marginLeft: 106,
-    marginTop: 4,
-    color: '#555',
   },
+  listItem: { flex: 1, color: '#555' },
+
   saveButton: {
     backgroundColor: '#3C4CF1',
     padding: 14,

@@ -95,10 +95,10 @@ export default function MedicineRegisterScreen() {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>처방전/약봉투 사진 촬영</Text>
         <View style={styles.headerRight}>
-          <TouchableOpacity onPress={() => {}} style={{ marginRight: 16 }}>
+          <TouchableOpacity onPress={() => { }} style={styles.iconButton}>
             <Feather name="calendar" size={24} color="#000" />
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
+          <TouchableOpacity onPress={() => navigation.navigate('Settings')} style={styles.iconButton}>
             <Feather name="settings" size={24} color="#000" />
           </TouchableOpacity>
         </View>
@@ -107,8 +107,7 @@ export default function MedicineRegisterScreen() {
       {/* BODY */}
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.subtitle}>
-          한 번의 사진 촬영으로{'\n'}          
-          자동 약 복용 알람, 약 기록 및 관리까지!
+          한 번의 사진 촬영으로{"\n"} 자동 약 복용 알람, 약 기록 및 관리까지!
         </Text>
 
         {/* 처방전 카드 */}
@@ -148,3 +147,64 @@ export default function MedicineRegisterScreen() {
     </SafeAreaView>
   );
 }
+
+// styles 정의
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fff'
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee'
+  },
+  headerLeft: {
+    marginRight: 16
+  },
+  headerTitle: {
+    flex: 1,
+    textAlign: 'center',
+    fontSize: 18,
+    fontWeight: '600'
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center'
+  },
+  iconButton: {
+    marginLeft: 12
+  },
+  content: {
+    padding: 16
+  },
+  subtitle: {
+    fontSize: 16,
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 24
+  },
+  card: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#f8f8f8',
+    borderRadius: 8,
+    padding: 16
+  },
+  cardTextWrapper: {
+    flex: 1
+  },
+  cardTitleBig: {
+    fontSize: 20,
+    fontWeight: '600'
+  },
+  cardImage: {
+    width: 80,
+    height: 80,
+    marginHorizontal: 16
+  }
+});

@@ -1,4 +1,3 @@
-// src/screens/HomeScreen.js
 import React, { useState } from 'react';
 import {
   SafeAreaView,
@@ -12,13 +11,7 @@ import {
   Modal,
   Platform,
 } from 'react-native';
-import {
-  FontAwesome5,
-  AntDesign,
-  Feather,
-  Ionicons,
-  Entypo,
-} from '@expo/vector-icons';
+import { FontAwesome5, AntDesign, Feather, Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 
@@ -30,13 +23,34 @@ export default function HomeScreen() {
   const date = today.getDate();
   const days = ['일', '월', '화', '수', '목', '금', '토'];
 
+  // 메모 상태
   const [memoMap, setMemoMap] = useState({});
   const [selectedDate, setSelectedDate] = useState(null);
-  const [modalVisible, setModalVisible] = useState(false);
   const [memoText, setMemoText] = useState('');
+  const [modalVisible, setModalVisible] = useState(false);
+
+  // DatePicker
   const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
   const [currentDate, setCurrentDate] = useState(today);
 
+  // 메모 저장 함수
+  const saveMemo = () => {
+    if (selectedDate) {
+      setMemoMap(prev => ({ ...prev, [selectedDate]: memoText }));
+    }
+    setModalVisible(false);
+  };
+
+  // 메모 삭제 함수
+  const deleteMemo = dateKey => {
+    setMemoMap(prev => {
+      const next = { ...prev };
+      delete next[dateKey];
+      return next;
+    });
+  };
+
+  // 주간 날짜 배열
   const weekDates = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(today);
     d.setDate(d.getDate() - 3 + i);
@@ -53,21 +67,14 @@ export default function HomeScreen() {
     };
   });
 
+  // 약 복용 리스트
   const [medicines, setMedicines] = useState([
-    {
-      id: 'morning',
-      label: '아침 약 복용하기',
-      desc: ['비타민 C', '감기약'],
-      checked: true,
-    },
+    { id: 'morning', label: '아침 약 복용하기', desc: ['비타민 C', '감기약'], checked: true },
     { id: 'lunch', label: '점심 약 복용하기', desc: ['감기약'], checked: false },
     { id: 'dinner', label: '저녁 약 복용하기', desc: ['감기약'], checked: false },
   ]);
-
-  const toggleMedicine = (id) => {
-    setMedicines((ms) =>
-      ms.map((m) => (m.id === id ? { ...m, checked: !m.checked } : m))
-    );
+  const toggleMedicine = id => {
+    setMedicines(ms => ms.map(m => (m.id === id ? { ...m, checked: !m.checked } : m)));
   };
 
   return (
@@ -79,16 +86,13 @@ export default function HomeScreen() {
     >
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
 
-      {/* ── 커스텀 헤더 ───────────────────────── */}
+      {/* 헤더 */}
       <View style={styles.header}>
-        {/* 좌측: 닉네임 */}
         <TouchableOpacity style={styles.headerLeft}>
           <Text style={styles.headerName}>
             김안하님 <AntDesign name="down" size={10} />
           </Text>
         </TouchableOpacity>
-
-        {/* 가운데: 날짜 */}
         <TouchableOpacity
           style={styles.headerTitleWrapper}
           onPress={() => setDatePickerVisibility(true)}
@@ -97,8 +101,6 @@ export default function HomeScreen() {
             {month}월 {date}일, 오늘 <AntDesign name="down" size={10} />
           </Text>
         </TouchableOpacity>
-
-        {/* 우측: 달력 · 설정 */}
         <View style={styles.headerRight}>
           <TouchableOpacity
             onPress={() => navigation.navigate('Calendar')}
@@ -112,19 +114,19 @@ export default function HomeScreen() {
         </View>
       </View>
 
-      {/* ── 주간 달력 ───────────────────────── */}
+      {/* 주간 달력 */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.calendar}
       >
-        {weekDates.map((item, i) => (
-          <View key={i} style={styles.dayColumn}>
+        {weekDates.map(item => (
+          <View key={item.fullDate} style={styles.dayColumn}>
             <Text style={styles.dayText}>{item.day}</Text>
             <TouchableOpacity
               onPress={() => {
                 setSelectedDate(item.fullDate);
-                setMemoText(memoMap[item.fullDate] || '');
+                setMemoText(item.memo || '');
                 setModalVisible(true);
               }}
             >
@@ -141,20 +143,43 @@ export default function HomeScreen() {
                 </Text>
               </View>
             </TouchableOpacity>
-            <View style={styles.tagContainer}>
-              {item.memo && (
-                <Text style={styles.memoTag} numberOfLines={1}>
-                  {item.memo}
+
+            {/* 메모 Pill만 표시 (4글자 제한) */}
+            {item.memo && (
+              <TouchableOpacity
+                style={[
+                  styles.memoPill,
+                  item.memo.includes('약')
+                    ? styles.memoPillOrange
+                    : styles.memoPillBlue,
+                ]}
+                onPress={() => deleteMemo(item.fullDate)}
+              >
+                <Text
+                  style={[
+                    styles.memoPillText,
+                    item.memo.includes('약')
+                      ? styles.memoPillTextOrange
+                      : styles.memoPillTextBlue,
+                  ]}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
+                  {item.memo.length > 4
+                    ? `${item.memo.slice(0, 4)}...`
+                    : item.memo}
                 </Text>
-              )}
-            </View>
+              </TouchableOpacity>
+            )}
           </View>
         ))}
       </ScrollView>
 
       <View style={styles.divider} />
 
+      {/* 콘텐츠 섹션 */}
       <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
+        {/* 방문 */}
         <TouchableOpacity
           style={styles.visitCard}
           onPress={() => navigation.navigate('VisitDetail')}
@@ -162,7 +187,7 @@ export default function HomeScreen() {
           <Text style={styles.visitText}>오늘 병원에 방문하셨어요.</Text>
         </TouchableOpacity>
 
-        {/* 약 복용 섹션 */}
+        {/* 약 복용 */}
         <View style={styles.section}>
           <TouchableOpacity
             style={styles.sectionHeader}
@@ -172,8 +197,7 @@ export default function HomeScreen() {
             <Text style={styles.sectionTitle}>약 복용</Text>
             <AntDesign name="right" size={16} color="black" />
           </TouchableOpacity>
-
-          {medicines.map((item) => (
+          {medicines.map(item => (
             <View key={item.id} style={styles.medicineItem}>
               <View style={styles.medicineLeft}>
                 <View style={styles.pillIcon}>
@@ -201,7 +225,9 @@ export default function HomeScreen() {
                 onPress={() => toggleMedicine(item.id)}
                 style={styles.checkboxWrapper}
               >
-                <View style={[styles.checkbox, item.checked && styles.checked]}>
+                <View
+                  style={[styles.checkbox, item.checked && styles.checked]}
+                >
                   {item.checked && (
                     <AntDesign name="check" size={14} color="white" />
                   )}
@@ -211,7 +237,7 @@ export default function HomeScreen() {
           ))}
         </View>
 
-        {/* 지금 나에게 필요한 정보 */}
+        {/* 정보 */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>지금 나에게 필요한 정보</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -227,15 +253,49 @@ export default function HomeScreen() {
         </View>
       </ScrollView>
 
-      {/* 메모 모달 & DatePicker */}
+      {/* 메모 모달 */}
       <Modal visible={modalVisible} transparent animationType="fade">
-        {/* …생략… */}
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>{selectedDate} 메모</Text>
+            <TextInput
+              value={memoText}
+              onChangeText={setMemoText}
+              placeholder="메모를 입력하세요"
+              style={styles.modalInput}
+              multiline
+            />
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={() => setModalVisible(false)}
+              >
+                <Text style={styles.modalButtonText}>취소</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.saveButton]}
+                onPress={saveMemo}
+              >
+                <Text
+                  style={[styles.modalButtonText, { color: '#fff' }]}
+                >
+                  저장
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
       </Modal>
+
+      {/* DatePicker */}
       <DateTimePickerModal
         isVisible={isDatePickerVisible}
         mode="date"
+        locale="ko-KR"
+        confirmTextIOS="확인"
+        cancelTextIOS="취소"
         date={currentDate}
-        onConfirm={(date) => {
+        onConfirm={date => {
           setCurrentDate(date);
           setDatePickerVisibility(false);
         }}
@@ -247,11 +307,8 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
-
-  // ↓ 새로 추가된 헤더 스타일 ↓
   header: {
     height: 56,
-    position: 'relative',
     justifyContent: 'center',
     backgroundColor: '#fff',
     borderBottomWidth: 0.5,
@@ -263,11 +320,7 @@ const styles = StyleSheet.create({
     top: '50%',
     transform: [{ translateY: -12 }],
   },
-  headerName: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#000',
-  },
+  headerName: { fontSize: 18, fontWeight: '600', color: '#000' },
   headerTitleWrapper: {
     position: 'absolute',
     left: 0,
@@ -276,11 +329,7 @@ const styles = StyleSheet.create({
     top: '50%',
     transform: [{ translateY: -10 }],
   },
-  headerDate: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#000',
-  },
+  headerDate: { fontSize: 16, fontWeight: 'bold', color: '#000' },
   headerRight: {
     position: 'absolute',
     right: 16,
@@ -289,9 +338,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-
-  // ↓ 기존 calendarHeader, headerIcons 스타일 모두 제거 ↓
-
   calendar: { paddingLeft: 16, paddingVertical: 16 },
   dayColumn: { alignItems: 'center', marginRight: 24 },
   dayText: { fontSize: 15, color: '#2d2d2d', marginBottom: 4 },
@@ -305,8 +351,24 @@ const styles = StyleSheet.create({
   todayCircle: { backgroundColor: '#424CF2' },
   dateTextCircle: { fontSize: 16, fontWeight: '600' },
   todayText: { color: 'white' },
-  tagContainer: { marginTop: 6, alignItems: 'center' },
-
+  memoPill: {
+    marginTop: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    maxWidth: 120,
+  },
+  memoPillBlue: { backgroundColor: '#D6EBFF' },
+  memoPillOrange: { backgroundColor: '#FFE8CC' },
+  memoPillText: { fontSize: 12, fontWeight: '500', flexShrink: 1 },
+  memoPillTextBlue: { color: '#007E33' },
+  memoPillTextOrange: { color: '#FF8A00' },
+  divider: {
+    height: 1,
+    backgroundColor: '#E0E0E0',
+    marginHorizontal: 16,
+    marginBottom: 12,
+  },
   visitCard: {
     backgroundColor: '#D6EBFF',
     marginHorizontal: 16,
@@ -316,12 +378,7 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     marginTop: 15,
   },
-  visitText: {
-    fontWeight: 'bold',
-    fontSize: 20,
-    color: '#1A1A1A',
-  },
-
+  visitText: { fontWeight: 'bold', fontSize: 20, color: '#1A1A1A' },
   section: { paddingHorizontal: 16, marginBottom: 24 },
   sectionHeader: {
     flexDirection: 'row',
@@ -335,17 +392,12 @@ const styles = StyleSheet.create({
     marginBottom: 14,
     marginTop: 10,
   },
-
   medicineItem: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     marginBottom: 20,
   },
-  medicineLeft: {
-    width: 40,
-    alignItems: 'center',
-    marginRight: 12,
-  },
+  medicineLeft: { width: 40, alignItems: 'center', marginRight: 12 },
   pillIcon: {
     width: 36,
     height: 36,
@@ -354,25 +406,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  medicineInfo: {
-    flex: 1,
-    paddingTop: 2,
-  },
-  grayLabel: {
-    fontSize: 13,
-    color: '#888',
-    marginBottom: 2,
-  },
-  boldLabel: {
-    fontSize: 15,
-    fontWeight: 'bold',
-    marginBottom: 2,
-  },
-  descDot: {
-    fontSize: 13,
-    color: '#000',
-    marginLeft: 2,
-  },
+  medicineInfo: { flex: 1, paddingTop: 2 },
+  grayLabel: { fontSize: 13, color: '#888', marginBottom: 2 },
+  boldLabel: { fontSize: 15, fontWeight: 'bold', marginBottom: 2 },
+  descDot: { fontSize: 13, color: '#000', marginLeft: 2 },
   checkboxWrapper: {
     justifyContent: 'center',
     alignItems: 'center',
@@ -387,40 +424,39 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  checked: {
-    backgroundColor: '#4CD964',
-    borderWidth: 0,
-  },
-
-  infoCard: {
-    backgroundColor: '#FBF8F4',
-    padding: 16,
-    marginRight: 12,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
-  },
+  checked: { backgroundColor: '#4CD964', borderWidth: 0 },
+  infoCard: { backgroundColor: '#FBF8F4', padding: 16, marginRight: 12, borderRadius: 12, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 4, elevation: 2 },
   infoCardText: { fontSize: 14, fontWeight: '500', color: '#333' },
-
-  divider: {
-    height: 1,
-    backgroundColor: '#E0E0E0',
-    marginHorizontal: 16,
-    marginBottom: 12,
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-
-  memoTag: {
-    backgroundColor: '#E6F4EA',
-    color: '#007E33',
-    fontSize: 12,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
-    marginTop: 2,
-    maxWidth: 64,
-    textAlign: 'center',
-  }
-
+  modalCard: {
+    width: '85%',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 8,
+  },
+  modalTitle: { fontSize: 18, fontWeight: '600', marginBottom: 12 },
+  modalInput: {
+    height: 100,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    padding: 12,
+    textAlignVertical: 'top',
+    marginBottom: 16,
+  },
+  modalButtons: { flexDirection: 'row', justifyContent: 'flex-end' },
+  modalButton: { paddingVertical: 10, paddingHorizontal: 16, borderRadius: 6, marginLeft: 8 },
+  cancelButton: { backgroundColor: '#f0f0f0' },
+  saveButton: { backgroundColor: '#3C4CF1' },
+  modalButtonText: { fontSize: 14, fontWeight: '500', color: '#333' },
 });

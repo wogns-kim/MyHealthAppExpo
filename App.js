@@ -1,4 +1,4 @@
-// App.js (프로젝트 루트)
+// App.js
 import 'react-native-gesture-handler';
 import React from 'react';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
@@ -8,7 +8,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons, AntDesign } from '@expo/vector-icons';
 
 // screens
-import HomeScreen from './src/screens/HomeScreen';
+import HomeStackNavigator from './src/screens/HomeStackNavigator';
 import CalendarScreen from './src/screens/CalendarScreen';
 import SolutionScreen from './src/screens/SolutionScreen';
 import HospitalScreen from './src/screens/HospitalScreen';
@@ -18,7 +18,15 @@ import VisitDetailScreen from './src/screens/VisitDetailScreen';
 import SplashScreen from './src/screens/SplashScreen';
 import MedicineDetailScreen from './src/screens/MedicineDetailScreen';
 import SettingsScreen from './src/screens/SettingScreen';
-import LoginPage from './src/screens/loginPage'; 
+import LoginPage from './src/screens/loginPage';
+import PhotoPreviewScreen from './src/screens/PhotoPreviewScreen';
+import chatbot from './src/screens/chatbot';
+import InfoDetailScreen from './src/screens/InfoDetailScreen';
+
+
+
+
+
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -45,7 +53,7 @@ function MainTabs() {
     >
       <Tab.Screen
         name="Home"
-        component={HomeScreen}
+        component={HomeStackNavigator}
         options={{
           tabBarLabel: '홈',
           tabBarIcon: ({ color, size }) => (
@@ -105,28 +113,21 @@ export default function App() {
         initialRouteName="Splash"
         screenOptions={{ headerTitleAlign: 'center' }}
       >
-        {/* 1. Splash */}
         <Stack.Screen
           name="Splash"
           component={SplashScreen}
           options={{ headerShown: false }}
         />
-
-        {/* 2. Login 페이지 (로그인 흐름) */}
         <Stack.Screen
           name="Login"
           component={LoginPage}
           options={{ headerShown: false }}
         />
-
-        {/* 3. 메인 탭 */}
         <Stack.Screen
           name="MainTabs"
           component={MainTabs}
           options={{ headerShown: false }}
         />
-
-        {/* 4. 기타 스크린 */}
         <Stack.Screen
           name="Calendar"
           component={CalendarScreen}
@@ -147,11 +148,23 @@ export default function App() {
           component={SettingsScreen}
           options={{ headerShown: false }}
         />
-        <Stack.Screen
-          name="MyRecords"
-          component={HospitalScreen}
+        <Stack.Screen name="PhotoPreview"
+          component={PhotoPreviewScreen}
           options={{ headerShown: false }}
         />
+        <Stack.Screen
+          name="chatbot"
+          component={chatbot}
+          options={{
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen
+          name="InfoDetail"
+          component={InfoDetailScreen}
+          options={{ headerShown: false }}
+        />
+
       </Stack.Navigator>
     </NavigationContainer>
   );

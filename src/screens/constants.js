@@ -2,8 +2,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // API_BASE를 /api로 지정하여 엔드포인트 중복 제거
-export const API_BASE = 'https://c68f-211-198-0-129.ngrok-free.app/api';
+export const API_BASE = 'https://309f-165-246-158-4.ngrok-free.app/api';
 
+//https://b110-165-246-158-4.ngrok-free.app
 export async function registerUser({ username, password }) {
     const url = `${API_BASE}/register/`;
     console.log('registerUser →', url);
@@ -37,8 +38,7 @@ export async function createProfile({ name, birth_date, gender, allergies, chron
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Token ${token}`,  // DRF TokenAuthentication 사용 시
-            // JWT/Bearer 방식이면 'Authorization': `Bearer ${token}`
+            'Authorization': `Token ${token}`, 
         },
         body: JSON.stringify({ name, birth_date, gender, allergies, chronic_diseases }),
     });

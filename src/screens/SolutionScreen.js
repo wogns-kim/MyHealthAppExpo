@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { Alert } from 'react-native';
+
 import {
   SafeAreaView,
   View,
@@ -48,22 +50,42 @@ export default function SolutionScreen() {
       comments: 4,
       time: '2시간 전',
     },
-    
   ];
+
+  const handleFaqPress = async (question) => {
+    try {
+      const response = await fetch('https://3140-165-246-131-35.ngrok-free.app/api/chat/bot/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: question }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      Alert.alert('답변', data.response || '응답이 없습니다.');
+    } catch (error) {
+      console.error('요청 실패:', error);
+      Alert.alert('오류', '서버 응답 처리 중 문제가 발생했습니다.');
+    }
+  };
+
 
   return (
     <SafeAreaView style={styles.container}>
-      
+
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="chevron-back" size={24} color="#000" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>고민해결</Text>
-        <View style={{ width: 24 }} /> 
+        <View style={{ width: 24 }} />
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
-        
+
         <View style={styles.searchBox}>
           <Ionicons name="search-outline" size={20} color="#888" style={{ marginRight: 8 }} />
           <TextInput
@@ -75,7 +97,7 @@ export default function SolutionScreen() {
           />
         </View>
 
-        
+
         <Text style={styles.sectionTitleSmall}>추천 검색어</Text>
         <View style={styles.tagsRow}>
           {recommendedTags.map((tag, idx) => (
@@ -85,7 +107,7 @@ export default function SolutionScreen() {
           ))}
         </View>
 
-        
+
         <View style={styles.sectionHeader}>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <AntDesign name="stethoscope" size={20} color="#000" style={{ marginRight: 6 }} />
@@ -95,13 +117,17 @@ export default function SolutionScreen() {
             <Text style={styles.viewAll}>전체보기</Text>
           </TouchableOpacity>
         </View>
+
         {faqList.map(item => (
-          <TouchableOpacity key={item.id} style={styles.faqItem}>
+          <TouchableOpacity
+            key={item.id}
+            style={styles.faqItem}
+            onPress={() => navigation.navigate('chatbot', { question: item.question })} 
+          >
             <Text style={styles.faqText}>Q. {item.question}</Text>
           </TouchableOpacity>
         ))}
 
-        
         <View style={[styles.sectionHeader, { marginTop: 24 }]}>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <Ionicons name="chatbubble-ellipses-outline" size={20} color="#000" style={{ marginRight: 6 }} />
@@ -111,6 +137,7 @@ export default function SolutionScreen() {
             <Text style={styles.viewAll}>전체보기</Text>
           </TouchableOpacity>
         </View>
+
         <FlatList
           data={postList}
           keyExtractor={item => item.id}

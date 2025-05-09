@@ -116,6 +116,7 @@ export default function MyPageScreen() {
                   setBirthDate(selected.toISOString().split('T')[0]);
                 }
               }}
+              themeVariant="light"
             />
             <TouchableOpacity
               style={styles.modalButton}
@@ -160,13 +161,14 @@ export default function MyPageScreen() {
         <View style={[styles.row, styles.rowHorizontal]}>
           <Text style={styles.label}>생년월일</Text>
           <TouchableOpacity
-            style={[styles.inputHalf, { justifyContent: 'center' }]}
+            style={[styles.inputHalf, { justifyContent: 'center', backgroundColor: '#fff', padding: 10 }]}
             onPress={() => setShowDatePicker(true)}
           >
-            <Text style={{ color: birthDate ? '#000' : '#aaa' }}>
+            <Text style={{ color: birthDate ? '#000' : '#aaa', fontSize: 16 }}>
               {birthDate || 'YYYY-MM-DD'}
             </Text>
           </TouchableOpacity>
+
         </View>
 
         {/* 만성질환 */}
@@ -291,7 +293,7 @@ const styles = StyleSheet.create({
     marginTop: -10,
   },
 
-  genderContainer: { flexDirection: 'row', flex: 1, justifyContent: 'flex-end' },
+  genderContainer: { flexDirection: 'row', flex: 1, justifyContent: 'flex-end', marginTop: '-10' },
   genderButton: {
     borderWidth: 1,
     borderColor: '#ddd',
@@ -320,7 +322,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: '50%',
     right: 12,
-    transform: [{ translateY: -12 }],
+    transform: [{ translateY: -15 }],
   },
   plus: { fontSize: 28, color: '#3F51B5' },
 

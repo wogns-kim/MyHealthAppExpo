@@ -5,9 +5,7 @@ export default function SplashScreen({ navigation }) {
   useEffect(() => {
     const timeout = setTimeout(() => {
       // 수정: 메인 탭이 아니라 로그인 화면으로 이동
-      navigation.replace('MainTabs', {
-        screen: 'Home'   // TabNavigator 안의 'Home' route 로 바로 진입
-      });
+      navigation.replace('MainTabs', { screen: 'Home' })
     }, 2000); // 2초 후 자동 이동
 
     return () => clearTimeout(timeout);

@@ -97,7 +97,6 @@ export default function ChatScreen() {
 
     useEffect(() => {
         if (question) {
-            //setInputText(question);
             sendQuestion(question);
         }
     }, [question]);

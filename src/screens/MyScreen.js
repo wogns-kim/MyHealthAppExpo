@@ -1,5 +1,4 @@
-// src/screens/MyPageScreen.js
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   SafeAreaView,
   View,
@@ -10,16 +9,18 @@ import {
   ScrollView,
   Alert,
   Modal,
-  Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { createProfile } from './constants'; // 프로필 업데이트 API
+import { getProfile, createProfile } from './constants'; // 프로필 조회/업데
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 
 export default function MyPageScreen() {
   const navigation = useNavigation();
-
+  const [loading, setLoading] = useState(true);
   const [name, setName] = useState('');
   const [gender, setGender] = useState(null);
   const [birthDate, setBirthDate] = useState('');
@@ -30,6 +31,39 @@ export default function MyPageScreen() {
   const [tempAllergy, setTempAllergy] = useState('');
   const [allergyList, setAllergyList] = useState([]);
 
+  // 초기 프로필 로드
+  useEffect(() => {
+    (async () => {
+      try {
+        const stored = await AsyncStorage.getItem('authToken');
+        console.log('▶️ useEffect getProfile 호출 전, 저장된 token:', stored);
+
+        const [profile] = await getProfile(); // 배열에서 첫 번째 요소 추출
+
+        console.log('✅ getProfile 응답:', profile);
+
+        setName(profile.name || '');
+        setGender(
+          profile.gender === 'M' ? '남성' :
+            profile.gender === 'F' ? '여성' : '기타'
+        );
+        if (profile.birth_date) {
+          setBirthDate(profile.birth_date);
+          setBirthDateRaw(new Date(profile.birth_date));
+        }
+        setChronicList(profile.chronic_diseases || []);
+        setAllergyList(profile.allergies || []);
+      } catch (e) {
+        console.error('🔥 프로필 조회 에러 전체:', e);
+
+        console.warn('프로필 조회 오류:', e.message);
+        Alert.alert('오류', '프로필을 불러올 수 없습니다.');
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
   const addChronic = () => {
     const t = tempChronic.trim();
     if (t) {
@@ -37,10 +71,7 @@ export default function MyPageScreen() {
       setTempChronic('');
     }
   };
-
-  const removeChronic = index => {
-    setChronicList(prev => prev.filter((_, i) => i !== index));
-  };
+  const removeChronic = i => setChronicList(prev => prev.filter((_, idx) => idx !== i));
 
   const addAllergy = () => {
     const t = tempAllergy.trim();
@@ -49,12 +80,11 @@ export default function MyPageScreen() {
       setTempAllergy('');
     }
   };
+  const removeAllergy = i => setAllergyList(prev => prev.filter((_, idx) => idx !== i));
 
-  const removeAllergy = index => {
-    setAllergyList(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const onSaveProfile = async () => {
+  const 
+  onSaveProfile = async () => {
+    setLoading(true);
     try {
       await createProfile({
         name,
@@ -66,10 +96,22 @@ export default function MyPageScreen() {
       Alert.alert('✅ 저장 완료', '프로필이 업데이트되었습니다.');
       navigation.goBack();
     } catch (e) {
-      console.warn(e);
-      Alert.alert('❌ 오류', e.message);
+      console.warn('프로필 저장 오류:', e.message);
+      Alert.alert('❌ 오류', e.message || '알 수 없는 오류가 발생했습니다.');
+
+
+    } finally {
+      setLoading(false);
     }
   };
+
+  if (loading) {
+    return (
+      <View style={styles.loader}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -82,10 +124,7 @@ export default function MyPageScreen() {
           <Text style={styles.headerTitle}>마이페이지</Text>
         </View>
         <View style={styles.headerRight}>
-          <TouchableOpacity
-            onPress={() => navigation.navigate('Calendar')}
-            style={styles.iconSpacing}
-          >
+          <TouchableOpacity onPress={() => navigation.navigate('Calendar')} style={styles.iconSpacing}>
             <Feather name="calendar" size={20} color="black" />
           </TouchableOpacity>
           <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
@@ -110,7 +149,6 @@ export default function MyPageScreen() {
               locale="ko-KR"
               maximumDate={new Date()}
               onChange={(event, selected) => {
-                // Android: event.type==='set' means user confirmed a date
                 if (event.type === 'set' && selected) {
                   setBirthDateRaw(selected);
                   setBirthDate(selected.toISOString().split('T')[0]);
@@ -118,10 +156,7 @@ export default function MyPageScreen() {
               }}
               themeVariant="light"
             />
-            <TouchableOpacity
-              style={styles.modalButton}
-              onPress={() => setShowDatePicker(false)}
-            >
+            <TouchableOpacity style={styles.modalButton} onPress={() => setShowDatePicker(false)}>
               <Text style={styles.modalButtonText}>확인</Text>
             </TouchableOpacity>
           </View>
@@ -129,7 +164,7 @@ export default function MyPageScreen() {
       </Modal>
 
       {/* FORM */}
-      <ScrollView contentContainerStyle={styles.form}>
+      <ScrollView contentContainerStyle={styles.form} keyboardShouldPersistTaps="handled">
         {/* 이름 */}
         <View style={[styles.row, styles.rowHorizontal]}>
           <Text style={styles.label}>이름</Text>
@@ -168,7 +203,6 @@ export default function MyPageScreen() {
               {birthDate || 'YYYY-MM-DD'}
             </Text>
           </TouchableOpacity>
-
         </View>
 
         {/* 만성질환 */}
@@ -234,10 +268,17 @@ export default function MyPageScreen() {
       </ScrollView>
     </SafeAreaView>
   );
+
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
+  loader: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -293,7 +334,12 @@ const styles = StyleSheet.create({
     marginTop: -10,
   },
 
-  genderContainer: { flexDirection: 'row', flex: 1, justifyContent: 'flex-end', marginTop: '-10' },
+  genderContainer: {
+    flexDirection: 'row',
+    flex: 1,
+    justifyContent: 'flex-end',
+    marginTop: -10,
+  },
   genderButton: {
     borderWidth: 1,
     borderColor: '#ddd',

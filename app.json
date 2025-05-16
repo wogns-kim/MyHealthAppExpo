@@ -28,6 +28,18 @@
     "plugins": [
       "expo-web-browser",
       "expo-localization"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "5655cdc1-7f15-4590-bbfc-eee38bb7a428"
+      }
+    },
+    "owner": "kimjaehoon",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/5655cdc1-7f15-4590-bbfc-eee38bb7a428"
+    }
   }
 }

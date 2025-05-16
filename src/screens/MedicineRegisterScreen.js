@@ -1,3 +1,4 @@
+// src/screens/MedicineRegisterScreen.js
 import React, { useEffect } from 'react';
 import {
   SafeAreaView,
@@ -8,47 +9,45 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
+  StatusBar,
+  Platform,
 } from 'react-native';
 import { Ionicons, Feather } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 
-
-
-
-
 export default function MedicineRegisterScreen() {
   const navigation = useNavigation();
   const route = useRoute();
+
+  // 1) 카메라 재촬영 파라미터 처리
   useEffect(() => {
     if (route.params?.retake && route.params?.captureType) {
       takePicture(route.params.captureType);
     }
   }, [route.params]);
-  const { uploaded, responseData } = route.params || {};
 
-  // ✅ 업로드 후 돌아왔을 때 알림
+  // 2) 업로드 완료 알림
+  const { uploaded, responseData } = route.params || {};
   useEffect(() => {
     if (uploaded && responseData) {
       Alert.alert('업로드 완료', '사진이 성공적으로 등록되었습니다.');
     }
   }, [uploaded, responseData]);
 
-  const takePicture = async (type) => {
-    const permission = await ImagePicker.requestCameraPermissionsAsync();
-    if (!permission.granted) {
+  // 3) 사진 촬영 함수
+  const takePicture = async type => {
+    const perm = await ImagePicker.requestCameraPermissionsAsync();
+    if (!perm.granted) {
       Alert.alert('권한 필요', '카메라 권한을 허용해 주세요.');
       return;
     }
-
     const result = await ImagePicker.launchCameraAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       quality: 0.8,
     });
-
     if (!result.canceled) {
       const uri = result.assets[0].uri;
-
       navigation.navigate('PhotoPreview', {
         imageUri: uri,
         captureType: type,
@@ -57,7 +56,9 @@ export default function MedicineRegisterScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView
+      style={[styles.container, Platform.OS === 'android' && { paddingTop: StatusBar.currentHeight }]}
+    >
       {/* HEADER */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerLeft}>
@@ -77,17 +78,18 @@ export default function MedicineRegisterScreen() {
       {/* BODY */}
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.subtitle}>
-          한 번의 사진 촬영으로{"\n"}자동 약 복용 알람, 약 기록 및 관리까지!
+          한 번의 사진 촬영으로{'\n'}자동 약 복용 알람, 약 기록 및 관리까지!
         </Text>
 
-        <TouchableOpacity
-          style={styles.card}
-          onPress={() => takePicture('prescription')}
-        >
+        <TouchableOpacity style={styles.card} onPress={() => takePicture('prescription')}>
           <View style={styles.cardTextWrapper}>
             <Text style={styles.cardTitleBig}>처방전</Text>
           </View>
-          <Image source={require('../../assets/description2.png')} style={styles.cardImage} resizeMode="contain" />
+          <Image
+            source={require('../../assets/description2.png')}
+            style={styles.cardImage}
+            resizeMode="contain"
+          />
           <Ionicons name="chevron-forward" size={20} color="#666" />
         </TouchableOpacity>
 
@@ -98,7 +100,11 @@ export default function MedicineRegisterScreen() {
           <View style={styles.cardTextWrapper}>
             <Text style={styles.cardTitleBig}>약봉투</Text>
           </View>
-          <Image source={require('../../assets/description1.png')} style={styles.cardImage} resizeMode="contain" />
+          <Image
+            source={require('../../assets/description1.png')}
+            style={styles.cardImage}
+            resizeMode="contain"
+          />
           <Ionicons name="chevron-forward" size={20} color="#666" />
         </TouchableOpacity>
       </ScrollView>
@@ -119,7 +125,6 @@ const styles = StyleSheet.create({
   headerTitle: { flex: 1, textAlign: 'center', fontSize: 18, fontWeight: '600' },
   headerRight: { flexDirection: 'row' },
   iconButton: { marginLeft: 12 },
-
   content: { padding: 16 },
   subtitle: {
     fontSize: 16,

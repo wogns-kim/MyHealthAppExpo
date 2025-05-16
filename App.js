@@ -10,21 +10,20 @@ import { Ionicons, AntDesign } from '@expo/vector-icons';
 // screens
 import HomeStackNavigator from './src/screens/HomeStackNavigator';
 import CalendarScreen from './src/screens/CalendarScreen';
-import SolutionScreen from './src/screens/SolutionScreen';
+import SolutionStackNavigator from './src/screens/SolutionStackNavigator';
 import HospitalScreen from './src/screens/HospitalScreen';
 import MyScreen from './src/screens/MyScreen';
-import MedicineRegisterScreen from './src/screens/MedicineRegisterScreen';
 import VisitDetailScreen from './src/screens/VisitDetailScreen';
 import SplashScreen from './src/screens/SplashScreen';
-import MedicineDetailScreen from './src/screens/MedicineDetailScreen';
 import SettingsScreen from './src/screens/SettingScreen';
 import LoginPage from './src/screens/loginPage';
 import PhotoPreviewScreen from './src/screens/PhotoPreviewScreen';
 import chatbot from './src/screens/chatbot';
 import InfoDetailScreen from './src/screens/InfoDetailScreen';
-
-
-
+import DrugFaqScreen from './src/screens/DrugFaqScreen';
+import MedicineDetailScreen from './src/screens/MedicineDetailScreen';
+import { MemoProvider } from './src/screens/MemoContext'; 
+import MedicineRegisterScreen from './src/screens/MedicineRegisterScreen';    // src 폴더 안에 뒀다면
 
 
 
@@ -39,7 +38,8 @@ function CustomTabBarButton({ children, onPress }) {
   );
 }
 
-function MainTabs() {
+function MainTabs({ route }) {
+
   return (
     <Tab.Navigator
       screenOptions={{
@@ -53,7 +53,7 @@ function MainTabs() {
     >
       <Tab.Screen
         name="Home"
-        component={HomeStackNavigator}
+        children={() => <HomeStackNavigator nameFromSignup={route.params?.name} />}
         options={{
           tabBarLabel: '홈',
           tabBarIcon: ({ color, size }) => (
@@ -61,9 +61,10 @@ function MainTabs() {
           ),
         }}
       />
+
       <Tab.Screen
         name="Solution"
-        component={SolutionScreen}
+        component={SolutionStackNavigator}
         options={{
           tabBarLabel: '고민해결',
           tabBarIcon: ({ color, size }) => (
@@ -71,8 +72,9 @@ function MainTabs() {
           ),
         }}
       />
+
       <Tab.Screen
-        name="MedicineRegister"
+        name="Medicine"
         component={MedicineRegisterScreen}
         options={{
           tabBarLabel: '',
@@ -82,6 +84,9 @@ function MainTabs() {
           tabBarButton: (props) => <CustomTabBarButton {...props} />,
         }}
       />
+
+
+
       <Tab.Screen
         name="Hospital"
         component={HospitalScreen}
@@ -108,65 +113,75 @@ function MainTabs() {
 
 export default function App() {
   return (
-    <NavigationContainer>
-      <Stack.Navigator
-        initialRouteName="Splash"
-        screenOptions={{ headerTitleAlign: 'center' }}
-      >
-        <Stack.Screen
-          name="Splash"
-          component={SplashScreen}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="Login"
-          component={LoginPage}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="MainTabs"
-          component={MainTabs}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="Calendar"
-          component={CalendarScreen}
-          options={{ headerShown: true, headerTitle: '달력', headerBackTitle: '홈', headerTintColor: '#000' }}
-        />
-        <Stack.Screen
-          name="VisitDetail"
-          component={VisitDetailScreen}
-          options={{ headerShown: true, headerTintColor: '#fff' }}
-        />
-        <Stack.Screen
-          name="MedicineDetail"
-          component={MedicineDetailScreen}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="Settings"
-          component={SettingsScreen}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen name="PhotoPreview"
-          component={PhotoPreviewScreen}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="chatbot"
-          component={chatbot}
-          options={{
-            headerShown: false,
-          }}
-        />
-        <Stack.Screen
-          name="InfoDetail"
-          component={InfoDetailScreen}
-          options={{ headerShown: false }}
-        />
+    <MemoProvider>
+      <NavigationContainer>
+        <Stack.Navigator
+          initialRouteName="Splash"
+          screenOptions={{ headerTitleAlign: 'center' }}
+        >
+          <Stack.Screen
+            name="Splash"
+            component={SplashScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="Login"
+            component={LoginPage}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="MainTabs"
+            component={MainTabs}
+            options={{ headerShown: false }}
+          />
 
-      </Stack.Navigator>
-    </NavigationContainer>
+          <Stack.Screen
+            name="MedicineDetail"
+            component={MedicineDetailScreen}
+            options={{ headerShown: false }}
+          />
+
+          <Stack.Screen
+            name="Calendar"
+            component={CalendarScreen}
+            options={{ headerShown: true, headerTitle: '달력', headerBackTitle: '홈', headerTintColor: '#000' }}
+          />
+          <Stack.Screen
+            name="VisitDetail"
+            component={VisitDetailScreen}
+            options={{ headerShown: true, headerTintColor: '#fff' }}
+          />
+
+          <Stack.Screen
+            name="Settings"
+            component={SettingsScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen name="PhotoPreview"
+            component={PhotoPreviewScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="chatbot"
+            component={chatbot}
+            options={{
+              headerShown: false,
+            }}
+          />
+          <Stack.Screen
+            name="InfoDetail"
+            component={InfoDetailScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen name="DrugFaq"
+            component={DrugFaqScreen}
+            options={{ headerShown: false }}
+          />
+
+
+        </Stack.Navigator>
+      </NavigationContainer>
+    </MemoProvider>
   );
 }
 

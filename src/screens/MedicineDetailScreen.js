@@ -8,25 +8,26 @@ import {
   ScrollView,
   Image,
   TouchableOpacity,
+  TextInput,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { Ionicons, Feather } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native'
+import { TabActions } from '@react-navigation/native';
+;
 
 export default function TodayMedicationScreen() {
   const navigation = useNavigation();
-
-  // ── 오늘 날짜 자동 계산 ─────────────────────
   const today = new Date();
   const month = today.getMonth() + 1;
   const date = today.getDate();
 
   const [category, setCategory] = useState('감기약');
-  // 로컬 이미지
+  const [searchText, setSearchText] = useState('');
+
   const img1 = require('../../pic/1.png');
   const img2 = require('../../pic/2.png');
 
-  // 예시 데이터
   const medicines = [
     {
       id: '1',
@@ -48,8 +49,11 @@ export default function TodayMedicationScreen() {
       info: '1정씩 3회 3일분 · 실온보관(1~30°C)',
       tags: ['운전 및 기계 조작 주의', '졸음 주의'],
     },
-    // …
   ];
+
+  const filteredMedicines = medicines.filter(item =>
+    item.name.toLowerCase().includes(searchText.toLowerCase())
+  );
 
   const getTagStyle = tag => ({
     backgroundColor: tag.includes('금지') || tag.includes('주의')
@@ -59,73 +63,75 @@ export default function TodayMedicationScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* ── HEADER ───────────────────────── */}
+      {/* 🔙 Header */}
       <View style={styles.header}>
-        {/* 뒤로가기 */}
         <TouchableOpacity
           style={styles.headerLeft}
-          onPress={() => navigation.goBack()}
+          onPress={() => {
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'MainTabs', params: { screen: 'Home' } }],
+            });
+          }}
         >
           <Ionicons name="chevron-back" size={24} color="#000" />
         </TouchableOpacity>
 
-        {/* 가운데 오늘 날짜 */}
-        <Text style={styles.headerTitle} pointerEvents="none">
-          {month}월 {date}일, 오늘
-        </Text>
+        <Text style={styles.headerTitle}>{month}월 {date}일, 오늘</Text>
 
-        {/* 우측 달력·설정 */}
         <View style={styles.headerRight}>
           <TouchableOpacity
-            onPress={() => navigation.navigate("Calendar")}
+            onPress={() => {
+              const jumpToAction = TabActions.jumpTo('Home');
+              navigation.dispatch(jumpToAction);
+            }}
             style={{ marginRight: 16 }}
           >
             <Feather name="calendar" size={24} color="#000" />
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('Settings')}
+          >
             <Feather name="settings" size={24} color="#000" />
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* ── BODY ─────────────────────────── */}
+      {/* 📋 Content */}
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.sectionTitle}>오늘 복용하는 약</Text>
 
-        {/* 카테고리 선택 */}
-        <View style={styles.pickerWrapper}>
-          <Picker
-            selectedValue={category}
-            onValueChange={setCategory}
-            style={styles.picker}
-            dropdownIconColor="#888"
-          >
-            <Picker.Item label="감기약" value="감기약" />
-            <Picker.Item label="두통약" value="두통약" />
-            <Picker.Item label="소화제" value="소화제" />
-          </Picker>
-        </View>
+        <TextInput
+          placeholder="약 이름 검색"
+          value={searchText}
+          onChangeText={setSearchText}
+          style={styles.searchInput}
+        />
 
-        {/* 약 리스트 */}
-        {medicines.map(item => (
-          <View key={item.id} style={styles.card}>
-            <Image source={item.image} style={styles.thumbnail} />
-            <View style={styles.cardBody}>
-              <Text style={styles.times}>{item.times.join(' ')}</Text>
-              <Text style={styles.medTitle}>
-                <Text style={styles.classText}>{item.classText} </Text>
-                {item.name}
-              </Text>
-              <Text style={styles.description}>{item.desc}</Text>
-              <Text style={styles.infoText}>{item.info}</Text>
-              <View style={styles.tagsContainer}>
-                {item.tags.map((tag, i) => (
-                  <View key={i} style={[styles.tag, getTagStyle(tag)]}>
-                    <Text style={styles.tagText}>{tag}</Text>
-                  </View>
-                ))}
+        {filteredMedicines.map((item, index) => (
+          <View key={item.id}>
+            <View style={styles.card}>
+              <Image source={item.image} style={styles.thumbnail} />
+              <View style={styles.cardBody}>
+                <Text style={styles.times}>{item.times.join(' ')}</Text>
+                <Text style={styles.medTitle}>
+                  <Text style={styles.classText}>{item.classText} </Text>
+                  {item.name}
+                </Text>
+                <Text style={styles.description}>{item.desc}</Text>
+                <Text style={styles.infoText}>{item.info}</Text>
+                <View style={styles.tagsContainer}>
+                  {item.tags.map((tag, i) => (
+                    <View key={i} style={[styles.tag, getTagStyle(tag)]}>
+                      <Text style={styles.tagText}>{tag}</Text>
+                    </View>
+                  ))}
+                </View>
               </View>
             </View>
+            {index < filteredMedicines.length - 1 && (
+              <View style={styles.divider} />
+            )}
           </View>
         ))}
       </ScrollView>
@@ -135,8 +141,6 @@ export default function TodayMedicationScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
-
-  // ── HEADER ─────────────────────────────
   header: {
     height: 56,
     position: 'relative',
@@ -150,6 +154,8 @@ const styles = StyleSheet.create({
     left: 16,
     top: '50%',
     transform: [{ translateY: -12 }],
+    zIndex: 10, // 🔥 추가!
+
   },
   headerTitle: {
     position: 'absolute',
@@ -167,18 +173,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-
-  // ── BODY ───────────────────────────────
   content: { paddingHorizontal: 16, paddingTop: 20, paddingBottom: 40 },
   sectionTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 12 },
-  pickerWrapper: {
+  searchInput: {
     borderWidth: 1,
     borderColor: '#ddd',
     borderRadius: 8,
-    overflow: 'hidden',
-    marginBottom: 20,
+    padding: 10,
+    marginBottom: 16,
+    fontSize: 14,
   },
-  picker: { height: 40 },
   card: { flexDirection: 'row', marginBottom: 20 },
   thumbnail: { width: 40, height: 40, borderRadius: 4 },
   cardBody: { flex: 1, marginLeft: 12 },
@@ -190,4 +194,5 @@ const styles = StyleSheet.create({
   tagsContainer: { flexDirection: 'row', flexWrap: 'wrap' },
   tag: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, marginRight: 6, marginBottom: 6 },
   tagText: { fontSize: 12, color: '#fff' },
+  divider: { height: 1, backgroundColor: '#eee', marginVertical: 10 },
 });

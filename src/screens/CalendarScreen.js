@@ -1,5 +1,10 @@
 // src/screens/CalendarScreen.js
-import React, { useState, useRef, useLayoutEffect } from 'react'
+import React, {
+  useState,
+  useRef,
+  useLayoutEffect,
+  useContext,
+} from 'react';
 import {
   View,
   Text,
@@ -9,257 +14,404 @@ import {
   TouchableOpacity,
   Animated,
   TextInput,
-  Button,
   ScrollView,
-  Image
-} from 'react-native'
-import { CalendarList } from 'react-native-calendars'
-import { useNavigation } from '@react-navigation/native'
-import { AntDesign } from '@expo/vector-icons'
+  KeyboardAvoidingView,
+  Platform,
+  Alert,
+} from 'react-native';
+import { CalendarList } from 'react-native-calendars';
+import { useNavigation } from '@react-navigation/native';
+import { AntDesign } from '@expo/vector-icons';
 
-const { height: SCREEN_HEIGHT } = Dimensions.get('window')
-const TOTAL_MONTHS_RANGE = 12 * 10
-const SHEET_HEIGHT = SCREEN_HEIGHT * 0.6
+// 추가된 부분: Context import
+import { MemoContext } from './MemoContext';
 
-const colorOptions = ['#FF476C','#FF8C00','#4CAF50','#2196F3','#9C27B0','#FFC107']
-const weekdayKor = ['일','월','화','수','목','금','토']
-
-// 예시 기록 데이터
-const records = {
-  '2025-04-10': {
-    visit: { clinic: '일내과의원', description: '알러지성 감기 및 비염 증상' },
-    medications: [
-      { category:'[해열진통제]', name:'타이레놀8시간이알서방정', icon: require('../../pic/1.png'),
-        times:'아침 점심 저녁', tags:['간 부담 가능','음주 금지'] },
-      // ... 이하 생략
-    ]
-  }
-}
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+const TOTAL_MONTHS_RANGE = 12 * 10;
+const SHEET_HEIGHT = SCREEN_HEIGHT * 0.6;
+const weekdayKor = ['일', '월', '화', '수', '목', '금', '토'];
 
 export default function CalendarScreen() {
-  const navigation = useNavigation()
-  const [selectedDay, setSelectedDay] = useState(null)
-  const [notes, setNotes] = useState({
-    '2025-04-15': [{ text:'정형외과 예약', color:'#FF476C' }],
-    '2025-05-04': [{ text:'정기 건강검진', color:'#FF476C' }]
-  })
-  const [newNoteText, setNewNoteText] = useState('')
-  const [newNoteColor, setNewNoteColor] = useState(colorOptions[0])
-  const slideAnim = useRef(new Animated.Value(SHEET_HEIGHT)).current
+  const navigation = useNavigation();
+  // Context 훅으로 교체
+  const { memoMap, saveMemo, deleteMemo } = useContext(MemoContext);
 
-  // 1) selectedDay가 있으면 스택 헤더 숨기고, 없으면 다시 보여줌
+  const [selectedDay, setSelectedDay] = useState(null);
+  const [records, setRecords] = useState({
+    default: [
+      { title: '월내과의원', description: '알러지성 감기 및 비염 증상' },
+      { title: '복용약', description: '알러지성 감기약 복용하기' },
+    ],
+  });
+  const [editingRecordIdx, setEditingRecordIdx] = useState(null);
+  const [recordTitle, setRecordTitle] = useState('');
+  const [recordDesc, setRecordDesc] = useState('');
+
+  // 메모 입력 관련
+  const [memoText, setMemoText] = useState('');
+  const [editingMemoIdx, setEditingMemoIdx] = useState(null);
+  const [editingMode, setEditingMode] = useState(false);
+
+  const slideAnim = useRef(new Animated.Value(SHEET_HEIGHT)).current;
+  const scrollRef = useRef();
+
   useLayoutEffect(() => {
-    navigation.setOptions({ headerShown: !selectedDay })
-  }, [navigation, selectedDay])
+    navigation.setOptions({ headerShown: !selectedDay });
+  }, [navigation, selectedDay]);
 
   const openBottomSheet = () =>
-    Animated.timing(slideAnim,{
+    Animated.timing(slideAnim, {
       toValue: 0,
       duration: 300,
-      useNativeDriver: true
-    }).start()
-
+      useNativeDriver: true,
+    }).start();
   const closeBottomSheet = () =>
-    Animated.timing(slideAnim,{
+    Animated.timing(slideAnim, {
       toValue: SHEET_HEIGHT,
       duration: 300,
-      useNativeDriver: true
+      useNativeDriver: true,
     }).start(() => {
-      // 2) 바텀시트 닫힐 때 selectedDay 해제 → useLayoutEffect가 트리거되어 헤더 복원
-      setSelectedDay(null)
-      setNewNoteText('')
-      setNewNoteColor(colorOptions[0])
-    })
+      setSelectedDay(null);
+      setMemoText('');
+      setEditingMemoIdx(null);
+      setEditingRecordIdx(null);
+      setRecordTitle('');
+      setRecordDesc('');
+      setEditingMode(false);
+    });
 
-  const onDayPress = day => {
-    setSelectedDay(day)
-    openBottomSheet()
-  }
+  const onDayPress = (day) => {
+    setSelectedDay(day);
+    setMemoText(''); // 새로 열 때 초기화
+    setEditingMemoIdx(null);
+    openBottomSheet();
+  };
 
-  const handleAddNote = () => {
-    if (!newNoteText.trim() || !selectedDay) return
-    const key = selectedDay.dateString
-    setNotes(prev => ({
-      ...prev,
-      [key]: [...(prev[key]||[]), { text: newNoteText.trim(), color: newNoteColor }]
-    }))
-    setNewNoteText('')
-  }
+  // Context의 saveMemo 사용
+  const handleSaveMemo = () => {
+    const key = selectedDay.dateString;
+    if (!memoText.trim()) return;
+    saveMemo(key, memoText.trim());
+    setMemoText('');
+    setEditingMemoIdx(null);
+  };
 
-  // 바텀 시트 헤더에 표시할 제목
-  const todayString = new Date().toISOString().split('T')[0]
-  let sheetTitle = ''
-  if (selectedDay) {
-    const { dateString, month, day } = selectedDay
-    sheetTitle = `${month}월 ${day}일`
-    sheetTitle += dateString === todayString
-      ? ', 오늘'
-      : `, ${weekdayKor[new Date(dateString).getDay()]}`
-  }
+  const handleEditMemo = (text, idx) => {
+    setMemoText(text);
+    setEditingMemoIdx(idx);
+  };
 
-  const todayRecord = selectedDay && records[selectedDay.dateString] // 예시
+  // Context의 deleteMemo 사용 (인덱스 기반 삭제 원하면 Context 구현 수정 필요)
+  const handleDeleteMemo = (idx) => {
+    const key = selectedDay.dateString;
+    Alert.alert('삭제 확인', '이 메모를 삭제할까요?', [
+      { text: '취소', style: 'cancel' },
+      {
+        text: '삭제',
+        style: 'destructive',
+        onPress: () => {
+          // Context에서 전체 삭제: deleteMemo(key)
+          // 만약 여러 개 중 하나만 지우고 싶다면 Context 로직 수정 필요합니다.
+          deleteMemo(key);
+        },
+      },
+    ]);
+  };
 
-  // 달력의 각 날짜 셀
-  const renderDay = ({ date, state }) => {
-    const isSel = selectedDay?.dateString === date.dateString
-    const dayNotes = notes[date.dateString] || []
-    return (
-      <TouchableOpacity style={styles.dayContainer} onPress={()=>onDayPress(date)}>
-        <View style={[styles.dayNumberContainer, isSel && styles.selectedDay]}>
-          <Text style={ isSel
-            ? styles.selectedDayText
-            : state==='disabled'
-              ? styles.disabledDayText
-              : styles.dayText
-          }>{date.day}</Text>
-        </View>
-        {dayNotes.map((n,i)=>(
-          <View key={i} style={[styles.labelContainer,{ backgroundColor:n.color }]}>
-            <Text style={styles.labelText} numberOfLines={1}>{n.text}</Text>
+  const handleEditRecord = (item, idx) => {
+    setEditingRecordIdx(idx);
+    setRecordTitle(item.title);
+    setRecordDesc(item.description);
+  };
+  const handleSaveRecord = () => {
+    const key = 'default';
+    if (!recordTitle.trim()) return;
+    setRecords((prev) => {
+      const current = prev[key] || [];
+      const updated = current.map((item, i) =>
+        i === editingRecordIdx
+          ? {
+            title: recordTitle.trim(),
+            description: recordDesc.trim(),
+          }
+          : item
+      );
+      return { ...prev, [key]: updated };
+    });
+    setEditingRecordIdx(null);
+    setRecordTitle('');
+    setRecordDesc('');
+  };
+
+  const sheetTitle = selectedDay
+    ? `${selectedDay.month}월 ${selectedDay.day}일 (${weekdayKor[new Date(selectedDay.dateString).getDay()]
+    })`
+    : '';
+
+  const renderRecords = () => {
+    const current = records['default'] || [];
+    return current.map((item, idx) => (
+      <View key={idx} style={styles.recordItem}>
+        <View
+          style={[
+            styles.bullet,
+            { backgroundColor: idx === 0 ? '#3351FF' : '#FFA726' },
+          ]}
+        />
+        {editingMode && editingRecordIdx === idx ? (
+          <View style={{ flex: 1 }}>
+            <TextInput
+              style={styles.recordInput}
+              value={recordTitle}
+              onChangeText={setRecordTitle}
+              placeholder="제목"
+            />
+            <TextInput
+              style={styles.recordInput}
+              value={recordDesc}
+              onChangeText={setRecordDesc}
+              placeholder="내용"
+              multiline
+            />
+            <TouchableOpacity
+              onPress={handleSaveRecord}
+              style={{ alignSelf: 'flex-end' }}
+            >
+              <Text style={styles.actionText}>저장</Text>
+            </TouchableOpacity>
           </View>
-        ))}
-      </TouchableOpacity>
-    )
-  }
+        ) : (
+          <View style={{ flex: 1 }}>
+            <Text style={styles.recordTitle}>{item.title}</Text>
+            <Text style={styles.recordDesc}>{item.description}</Text>
+          </View>
+        )}
+        {editingMode && editingRecordIdx !== idx && (
+          <TouchableOpacity onPress={() => handleEditRecord(item, idx)}>
+            <Text style={styles.actionText}>수정</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    ));
+  };
+
+  const renderMemoList = () => {
+    const key = selectedDay?.dateString;
+    const list = memoMap[key] ? [memoMap[key]] : [];
+    return list.map((item, idx) => (
+      <View key={idx} style={styles.memoRow}>
+        <Text style={styles.memoItem}>• {item}</Text>
+        {editingMode && (
+          <View style={styles.memoActions}>
+            <TouchableOpacity onPress={() => handleEditMemo(item, idx)}>
+              <Text style={styles.actionText}>수정</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => handleDeleteMemo(idx)}>
+              <Text style={styles.actionText}>삭제</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+    ));
+  };
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* 기본 달력 리스트 */}
       <CalendarList
         pastScrollRange={TOTAL_MONTHS_RANGE}
         futureScrollRange={TOTAL_MONTHS_RANGE}
-        scrollEnabled showScrollIndicator
+        scrollEnabled
+        showScrollIndicator
         onDayPress={onDayPress}
-        dayComponent={renderDay}
-        renderHeader={date=>(
-          <View style={styles.monthHeaderContainer}>
-            <Text style={styles.monthHeaderText}>{`${date.getMonth()+1}월`}</Text>
-          </View>
+        renderHeader={(date) => (
+          <Text style={styles.monthHeaderText}>
+            {date.getMonth() + 1}월
+          </Text>
         )}
-        theme={{
-          calendarBackground:'#FFF',
-          textSectionTitleColor:'#000',
-          monthTextColor:'#000',
-          arrowColor:'#000',
+        theme={{ calendarBackground: '#FFF' }}
+        dayComponent={({ date, state }) => {
+          const key = date.dateString;
+          const memosForDay = memoMap[key] ? [memoMap[key]] : [];
+          const isToday =
+            key === new Date().toISOString().split('T')[0];
+
+          const labels = memosForDay.map((memo) => {
+            const shortText =
+              memo.length > 10
+                ? memo.slice(0, 10) + '...'
+                : memo;
+            return { type: 'memo', text: shortText };
+          });
+          if (isToday)
+            labels.push({ type: 'record', text: '병원 방문' });
+
+          return (
+            <TouchableOpacity onPress={() => onDayPress(date)}>
+              <View style={{ alignItems: 'center', paddingVertical: 4 }}>
+                <Text
+                  style={{
+                    color: state === 'disabled' ? '#ccc' : '#000',
+                    fontWeight: isToday ? 'bold' : 'normal',
+                  }}
+                >
+                  {date.day}
+                </Text>
+                {labels.map((label, idx) => (
+                  <Text
+                    key={idx}
+                    style={{
+                      fontSize: 8,
+                      backgroundColor:
+                        label.type === 'memo'
+                          ? '#3366FF'
+                          : '#FFA726',
+                      color: '#fff',
+                      borderRadius: 4,
+                      paddingHorizontal: 4,
+                      marginTop: 2,
+                      overflow: 'hidden',
+                    }}
+                  >
+                    {label.text}
+                  </Text>
+                ))}
+              </View>
+            </TouchableOpacity>
+          );
         }}
       />
 
-      {/* 바텀 시트 */}
-      <Animated.View style={[styles.bottomSheet,{ transform:[{ translateY: slideAnim }] }]}>
-        <ScrollView style={styles.sheetContent}>
-          { /* selectedDay가 있을 때만 내부를 렌더링 */ }
-          {selectedDay && (
-            <>
-              {/* 내부 헤더: 뒤로가기 화살표 + 날짜 제목 */}
-              <View style={styles.sheetHeaderRow}>
-                <TouchableOpacity onPress={closeBottomSheet}>
-                  <AntDesign name="arrowleft" size={20} color="#000" />
-                </TouchableOpacity>
-                <Text style={styles.sheetHeaderText}>{sheetTitle}</Text>
-                <View style={{ width: 24 }} />
-              </View>
+      <Animated.View
+        style={[
+          styles.bottomSheet,
+          { transform: [{ translateY: slideAnim }] },
+        ]}
+      >
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+          <ScrollView
+            ref={scrollRef}
+            style={styles.sheetContent}
+            keyboardShouldPersistTaps="handled"
+          >
+            {selectedDay && (
+              <>
+                <View style={styles.sheetHeaderRow}>
+                  <TouchableOpacity onPress={closeBottomSheet}>
+                    <AntDesign
+                      name="arrowleft"
+                      size={20}
+                      color="#000"
+                    />
+                  </TouchableOpacity>
+                  <Text style={styles.sheetHeaderText}>
+                    {sheetTitle}
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => setEditingMode(!editingMode)}
+                  >
+                    <Text style={styles.modifyButton}>
+                      {editingMode ? '완료' : '기록 수정'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+                {renderRecords()}
+                <Text style={styles.memoLabel}>메모</Text>
+                {renderMemoList()}
+              </>
+            )}
+          </ScrollView>
 
-              {todayRecord ? (
-                /* 예시: 오늘 기록이 있을 때 */
-                <>
-                  <Text style={styles.sectionTitle}>● {todayRecord.visit.clinic}</Text>
-                  <Text style={styles.sectionDesc}>{todayRecord.visit.description}</Text>
-                  <Text style={[styles.sectionTitle,{ marginTop:16 }]}>● 복용약</Text>
-                  {todayRecord.medications.map((med,i)=>(
-                    <View key={i} style={styles.medRow}>
-                      <Image source={med.icon} style={styles.medIcon}/>
-                      <View style={styles.medInfo}>
-                        <Text style={styles.medTimes}>{med.times}</Text>
-                        <Text style={styles.medName}>{med.category} {med.name}</Text>
-                        <View style={styles.tagRow}>
-                          {med.tags.map((tag,j)=>(
-                            <View key={j} style={styles.tag}>
-                              <Text style={styles.tagText}>{tag}</Text>
-                            </View>
-                          ))}
-                        </View>
-                      </View>
-                    </View>
-                  ))}
-                </>
-              ) : (
-                /* 메모 리스트 + 입력폼 */
-                <>
-                  {(notes[selectedDay.dateString]||[]).map((n,idx)=>(
-                    <View key={idx} style={styles.existingNote}>
-                      <View style={[styles.colorBox,{ backgroundColor: n.color }]} />
-                      <Text>{n.text}</Text>
-                    </View>
-                  ))}
-                  <Text style={styles.inputLabel}>새 메모 내용</Text>
-                  <TextInput
-                    style={styles.noteInput}
-                    value={newNoteText}
-                    onChangeText={setNewNoteText}
-                    placeholder="메모를 입력하세요"
-                  />
-                  <Text style={styles.inputLabel}>라벨 색상 선택</Text>
-                  <View style={styles.swatchContainer}>
-                    {colorOptions.map(col=>(
-                      <TouchableOpacity
-                        key={col}
-                        style={[
-                          styles.swatch,
-                          { backgroundColor: col },
-                          newNoteColor===col && styles.swatchSelected
-                        ]}
-                        onPress={()=>setNewNoteColor(col)}
-                      />
-                    ))}
-                  </View>
-                  <Button title="메모 추가" onPress={handleAddNote}/>
-                </>
-              )}
-            </>
-          )}
-        </ScrollView>
+          <View style={styles.inputCardAdjusted}>
+            <TextInput
+              style={styles.inputField}
+              value={memoText}
+              onChangeText={setMemoText}
+              placeholder="내용을 입력하세요"
+              placeholderTextColor="#999"
+              multiline
+              blurOnSubmit={true}
+              onSubmitEditing={handleSaveMemo}
+              returnKeyType="done"
+            />
+          </View>
+        </KeyboardAvoidingView>
       </Animated.View>
     </SafeAreaView>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
-  container:{ flex:1, backgroundColor:'#FFF' },
-  monthHeaderContainer:{ width:'100%', paddingHorizontal:16, paddingVertical:8, alignItems:'flex-start' },
-  monthHeaderText:{ fontSize:18, fontWeight:'600', color:'#000' },
-  dayContainer:{ flex:1, alignItems:'center', paddingVertical:4 },
-  dayNumberContainer:{ width:28, height:28, alignItems:'center', justifyContent:'center' },
-  selectedDay:{ backgroundColor:'#3351FF', borderRadius:14 },
-  dayText:{ fontSize:16, color:'#000' },
-  disabledDayText:{ fontSize:16, color:'#d9e1e8' },
-  selectedDayText:{ fontSize:16, color:'#FFF' },
-  labelContainer:{ marginTop:2, borderRadius:4, paddingHorizontal:4, paddingVertical:1 },
-  labelText:{ color:'#FFF', fontSize:10, lineHeight:12 },
-  bottomSheet:{
-    position:'absolute', bottom:0, left:0, right:0,
-    height:SHEET_HEIGHT, backgroundColor:'#FFF',
-    borderTopLeftRadius:16, borderTopRightRadius:16,
-    shadowColor:'#000', shadowOffset:{ width:0, height:-3 },
-    shadowOpacity:0.1, shadowRadius:5, elevation:5
+  container: { flex: 1, backgroundColor: '#FFF' },
+  monthHeaderText: { padding: 16, fontSize: 18, fontWeight: '600' },
+  bottomSheet: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: SHEET_HEIGHT,
+    backgroundColor: '#FFF',
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    elevation: 5,
   },
-  sheetContent:{ padding:16 },
-  sheetHeaderRow:{ flexDirection:'row', alignItems:'center', marginBottom:12 },
-  sheetHeaderText:{ flex:1, textAlign:'center', fontSize:18, fontWeight:'600' },
-  sectionTitle:{ fontSize:16, fontWeight:'600', marginBottom:4 },
-  sectionDesc:{ fontSize:14, lineHeight:20 },
-  medRow:{ flexDirection:'row', marginTop:12, alignItems:'flex-start' },
-  medIcon:{ width:40, height:40, resizeMode:'contain', marginRight:12 },
-  medInfo:{ flex:1 },
-  medTimes:{ fontSize:12, color:'#666' },
-  medName:{ fontSize:14, fontWeight:'500', marginTop:2 },
-  tagRow:{ flexDirection:'row', flexWrap:'wrap', marginTop:4 },
-  tag:{ backgroundColor:'#3351FF', borderRadius:4, paddingHorizontal:6, paddingVertical:2, marginRight:6, marginBottom:4 },
-  tagText:{ color:'#FFF', fontSize:10 },
-  existingNote:{ flexDirection:'row', alignItems:'center', marginBottom:8 },
-  colorBox:{ width:12, height:12, marginRight:8, borderRadius:2 },
-  inputLabel:{ marginTop:12, marginBottom:4, fontSize:14, fontWeight:'500' },
-  noteInput:{ borderWidth:1, borderColor:'#DDD', borderRadius:6, padding:8, marginBottom:8, textAlignVertical:'top' },
-  swatchContainer:{ flexDirection:'row', marginBottom:12 },
-  swatch:{ width:24, height:24, borderRadius:12, marginRight:8 },
-  swatchSelected:{ borderWidth:2, borderColor:'#000' },
-})
+  sheetContent: { padding: 16, paddingBottom: 120 },
+  sheetHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    justifyContent: 'space-between',
+  },
+  sheetHeaderText: { fontSize: 18, fontWeight: '600' },
+  modifyButton: {
+    fontSize: 14,
+    color: '#3366FF',
+    fontWeight: '600',
+  },
+  recordItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  bullet: { width: 10, height: 10, borderRadius: 5, marginTop: 6, marginRight: 8 },
+  recordTitle: { fontSize: 15, fontWeight: 'bold', marginBottom: 4 },
+  recordDesc: { fontSize: 14, color: '#444' },
+  recordInput: {
+    backgroundColor: '#f0f0f0',
+    borderRadius: 8,
+    padding: 8,
+    fontSize: 14,
+    marginBottom: 4,
+  },
+  memoLabel: { marginTop: 20, fontWeight: 'bold', fontSize: 15, marginBottom: 10 },
+  memoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  memoItem: { fontSize: 14, color: '#222', flex: 1 },
+  memoActions: { flexDirection: 'row' },
+  actionText: { fontSize: 13, color: '#3366FF', marginLeft: 12 },
+  inputCardAdjusted: {
+    borderTopWidth: 1,
+    borderColor: '#eee',
+    padding: 16,
+    backgroundColor: '#fafafa',
+    marginBottom: 32,
+  },
+  inputField: {
+    backgroundColor: '#f0f0f0',
+    borderRadius: 10,
+    padding: 14,
+    fontSize: 15,
+    minHeight: 48,
+    textAlignVertical: 'top',
+  },
+});

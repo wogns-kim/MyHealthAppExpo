@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Alert } from 'react-native';
+import { Alert, Image } from 'react-native'; // ✅ Image 추가
 
 import {
   SafeAreaView,
@@ -13,6 +13,8 @@ import {
 } from 'react-native';
 import { Ionicons, AntDesign } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import QuestionDetailScreen from './QuestionDetailScreen';
+
 
 export default function SolutionScreen() {
   const navigation = useNavigation();
@@ -72,10 +74,8 @@ export default function SolutionScreen() {
     }
   };
 
-
   return (
     <SafeAreaView style={styles.container}>
-
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="chevron-back" size={24} color="#000" />
@@ -85,7 +85,6 @@ export default function SolutionScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
-
         <View style={styles.searchBox}>
           <Ionicons name="search-outline" size={20} color="#888" style={{ marginRight: 8 }} />
           <TextInput
@@ -97,7 +96,6 @@ export default function SolutionScreen() {
           />
         </View>
 
-
         <Text style={styles.sectionTitleSmall}>추천 검색어</Text>
         <View style={styles.tagsRow}>
           {recommendedTags.map((tag, idx) => (
@@ -107,22 +105,22 @@ export default function SolutionScreen() {
           ))}
         </View>
 
-
         <View style={styles.sectionHeader}>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <AntDesign name="stethoscope" size={20} color="#000" style={{ marginRight: 6 }} />
-            <Text style={styles.sectionTitle}>약 복용 궁금증</Text>
+
+            <Text style={styles.sectionTitle}>💊 약 복용 궁금증</Text>
           </View>
-          <TouchableOpacity>
+          <TouchableOpacity onPress={() => navigation.navigate('DrugFaq')}>
             <Text style={styles.viewAll}>전체보기</Text>
           </TouchableOpacity>
+
         </View>
 
         {faqList.map(item => (
           <TouchableOpacity
             key={item.id}
             style={styles.faqItem}
-            onPress={() => navigation.navigate('chatbot', { question: item.question })} 
+            onPress={() => navigation.navigate('chatbot', { question: item.question })}
           >
             <Text style={styles.faqText}>Q. {item.question}</Text>
           </TouchableOpacity>
@@ -133,7 +131,7 @@ export default function SolutionScreen() {
             <Ionicons name="chatbubble-ellipses-outline" size={20} color="#000" style={{ marginRight: 6 }} />
             <Text style={styles.sectionTitle}>궁금해요</Text>
           </View>
-          <TouchableOpacity>
+          <TouchableOpacity onPress={() => navigation.navigate('QuestionList')}>
             <Text style={styles.viewAll}>전체보기</Text>
           </TouchableOpacity>
         </View>
@@ -143,7 +141,11 @@ export default function SolutionScreen() {
           keyExtractor={item => item.id}
           scrollEnabled={false}
           renderItem={({ item }) => (
-            <TouchableOpacity style={styles.postCard}>
+            <TouchableOpacity
+              style={styles.postCard}
+              activeOpacity={0.7}
+              onPress={() => navigation.navigate('QuestionDetail', { post: item })}
+            >
               <Text style={styles.postTitle}>{item.title}</Text>
               <View style={styles.postMeta}>
                 <View style={styles.metaItem}>
@@ -160,6 +162,20 @@ export default function SolutionScreen() {
           )}
         />
       </ScrollView>
+
+      {/* ✅ 챗봇 버튼 추가 */}
+      <TouchableOpacity
+        onPress={() => navigation.navigate('chatbot')}
+        style={styles.chatbotButton}
+      >
+        <View style={styles.chatbotCircle}>
+          <Image
+            source={require('../../assets/chatbotch.png')}
+            style={styles.chatbotImage}
+            resizeMode="contain"
+          />
+        </View>
+      </TouchableOpacity>
     </SafeAreaView>
   );
 }
@@ -249,4 +265,30 @@ const styles = StyleSheet.create({
     marginRight: 16,
   },
   metaText: { fontSize: 12, color: '#888', marginLeft: 4 },
+
+  // ✅ 챗봇 버튼 스타일 추가
+  chatbotButton: {
+    position: 'absolute',
+    bottom: 90, // 하단 탭바 위 여유
+    right: 20,
+    zIndex: 100,
+  },
+  chatbotCircle: {
+    backgroundColor: '#3C4CF1',
+    borderRadius: 30,
+    width: 60,
+    height: 60,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  chatbotImage: {
+    width: 190,
+    height: 190,
+    marginBottom: 5,
+  },
 });

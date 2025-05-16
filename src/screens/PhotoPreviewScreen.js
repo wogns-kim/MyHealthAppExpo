@@ -1,3 +1,4 @@
+// src/screens/PhotoPreviewScreen.js
 import React from 'react';
 import {
     View,
@@ -11,6 +12,9 @@ import {
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+
+// 수정된 import 경로
+import { API_BASE } from './constants';
 
 export default function PhotoPreviewScreen() {
     const navigation = useNavigation();
@@ -33,13 +37,15 @@ export default function PhotoPreviewScreen() {
         });
 
         try {
-            const res = await fetch('https://309f-165-246-158-4.ngrok-free.app/api/prescriptions/', {
-                method: 'POST',
-                headers: {
-                    Authorization: `Token ${token}`,
-                },
-                body: formData,
-            });
+            // API_BASE 사용
+            const res = await fetch(
+                `${API_BASE}/prescriptions/`,
+                {
+                    method: 'POST',
+                    headers: { Authorization: `Token ${token}` },
+                    body: formData,
+                }
+            );
 
             if (!res.ok) {
                 const text = await res.text();
@@ -50,15 +56,14 @@ export default function PhotoPreviewScreen() {
 
             const data = await res.json();
             console.log('업로드 성공:', data);
+
             navigation.navigate('MainTabs', {
-                screen: 'MedicineRegister',
+                screen: 'Medicine',
                 params: {
                     uploaded: true,
                     responseData: data,
                 },
             });
-
-
         } catch (err) {
             console.error('전송 실패:', err);
             Alert.alert('전송 오류', '서버 전송 중 오류가 발생했습니다.');
@@ -78,7 +83,7 @@ export default function PhotoPreviewScreen() {
                 <TouchableOpacity
                     onPress={() =>
                         navigation.navigate('MainTabs', {
-                            screen: 'MedicineRegister',
+                            screen: 'Medicine',
                             params: {
                                 retake: true,
                                 captureType,
@@ -86,15 +91,17 @@ export default function PhotoPreviewScreen() {
                         })
                     }
                 >
-
                     <Text style={styles.retry}>재촬영</Text>
                 </TouchableOpacity>
-
             </View>
 
             {/* PHOTO PREVIEW */}
             <View style={styles.imageWrapper}>
-                <Image source={{ uri: imageUri }} style={styles.image} resizeMode="contain" />
+                <Image
+                    source={{ uri: imageUri }}
+                    style={styles.image}
+                    resizeMode="contain"
+                />
             </View>
 
             {/* 완료 버튼 */}
@@ -134,10 +141,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     },
-    image: {
-        width: '100%',
-        height: '100%',
-    },
+    image: { width: '100%', height: '100%' },
     confirmButton: {
         width: 200,
         alignSelf: 'center',
